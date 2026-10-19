@@ -1,0 +1,1 @@
+try{if(localStorage.getItem("zv-sidebar")==="1")document.documentElement.classList.add("sb-collapsed")}catch(e){}

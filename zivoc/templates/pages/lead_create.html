@@ -1,0 +1,15 @@
+{% set editing = lead is not none %}
+<div class="page-heading"><div><span class="eyebrow">BUILD YOUR PIPELINE</span><h1>{{ 'Edit Lead' if editing else 'Create Lead' }}</h1><p class="muted">{{ lead['lead_no'] if editing and lead['lead_no'] else 'Every new connection is an opportunity.' }}</p></div><div class="row-actions">{% if editing %}<a href="?page=orders&lead_id={{ lead['id'] }}">Create order →</a><a href="?page=reminders&lead_id={{ lead['id'] }}#new">Follow up</a>{% endif %}<a href="?page=leads">Lead Listing →</a></div></div>
+<form method="post" class="zf-form" data-party data-self="{{ lead['id'] if editing else 0 }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'lead_update' if editing else 'lead' }}">
+{% if editing %}<input type="hidden" name="id" value="{{ lead['id'] }}">{% endif %}
+<section class="card zf-card"><p class="zf-title"><span>Lead</span> Details :</p><div class="zf-grid">
+<label class="zf-c2">Lead Date :<input type="date" name="lead_date" value="{{ old.get('lead_date', today) }}" required></label>
+{% set party_name_field = 'name' %}
+{% include 'pages/_party.html' %}
+{% if all_access and not editing %}<div class="zf-c3">{{ assignment(u) }}</div>{% endif %}
+<label class="zf-c12">Lead Remark :<textarea name="remark" placeholder="Enter Lead Remark">{{ old.get('remark', '') }}</textarea></label>
+<label class="zf-c12">Next Contact Date :<input type="date" name="contact_date" value="{{ old.get('contact_date', '') }}" required></label>
+{% if editing %}<label class="zf-c4">Status :<select name="stage">{% for s in ['Lead', 'Oppurtunity', 'Oppurtunity 50%', 'Oppurtunity 75%', 'Oppurtunity 90%', 'Quotation', 'Do not Contact', 'Lost Quotation'] %}<option {{ 'selected' if old.get('stage', 'Lead') == s else '' }}>{{ s }}</option>{% endfor %}</select></label><label class="zf-c8">Status Remark :<textarea name="status_remark">{{ old.get('status_remark', '') }}</textarea></label>{% endif %}
+</div><button type="submit" class="zf-submit" data-party-submit>{{ 'Update Lead' if editing else 'Create Lead' }}</button></section>
+</form>
+<script type="application/json" id="party-data">{{ people|tojson }}</script>

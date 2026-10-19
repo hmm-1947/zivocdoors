@@ -1,0 +1,5 @@
+<h1>Quotation templates</h1>
+{% if u['role'] != 'admin' %}<p class="notice">Admin access required to manage templates.</p>
+{% else %}
+<div class="split"><section class="card"><h2>Existing templates</h2>{% for t in all_templates %}{{ start_form('qt_template') }}<input type="hidden" name="template_id" value="{{ t['id'] }}">{{ field('Title', 'title', 'text', t['title']) }}{{ area('Terms', 'terms', t['terms']) }}<label>Status<select name="active"><option value="1">Active</option><option value="0" {{ '' if t['active'] else 'selected' }}>Archived</option></select></label>{{ submit('Update template') }}{% endfor %}</section><section class="card"><h2>Add template</h2>{{ start_form('qt_template') }}{{ field('Title', 'title') }}{{ area('Terms', 'terms') }}{{ submit('Save template') }}</section></div>
+{% endif %}
