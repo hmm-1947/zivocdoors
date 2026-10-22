@@ -53,3 +53,5 @@ html.sb-collapsed .sidebar-toggle svg{transform:rotate(180deg)}
 .price-admin{margin-top:8px}.price-admin form{display:flex;gap:10px;align-items:center;margin:0}.price-admin input[type=number]{width:140px;min-height:40px;padding:8px 10px}.price-admin button{min-height:40px;padding:8px 16px}
 .price-admin .hr-table td{vertical-align:middle}
 .price-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}.price-row:last-child{border-bottom:0}.price-row form{display:flex;gap:10px;align-items:center;margin:0}.price-row input[type=number]{width:150px;min-height:40px;padding:8px 10px}.price-row button{min-height:40px;padding:8px 18px}@media(max-width:700px){.price-row{flex-direction:column;align-items:stretch}}
+.ol-orderform-btn{display:none}
+@media(max-width:700px){.ol-orderform-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:0 0 14px;padding:13px 16px;text-align:center}.ol-orderform-btn svg{width:18px;height:18px}}
