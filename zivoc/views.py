@@ -21,8 +21,8 @@ from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf
                        wf_ready, wf_survey)
 
 ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'checkout',
-                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates')
-NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'),
+                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms')
+NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'), ('order_forms', 'Order Form'),
        ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Commissions'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
 BOTTOM_NAV = (('home', 'Home'), ('leads', 'Leads'), ('orders', 'Orders'), ('products', 'Products'), ('profile', 'Profile'))
@@ -280,7 +280,39 @@ def ctx_workflow(u, o, wf):
     }
 
 
+def ctx_survey(u, all_access):
+    try:
+        if u['role'] == 'finance':
+            raise AppError('Sales or admin access required.')
+        o = owner('orders', to_int(request.args.get('id', 0)), u)
+        oid = int(o['id'])
+        if not wf_survey(oid):
+            raise AppError('Survey is not available for this order.')
+        if o['stage'] == 'production':
+            raise AppError('Released orders are locked.')
+        saved = {}
+        for m in wf_measurements(oid):
+            saved.setdefault(int(m['order_item_id']), m)
+        items = []
+        for item in wf_items(oid):
+            m = saved.get(int(item['id']))
+            items.append({
+                'id': int(item['id']), 'name': item['name'], 'quantity': int(item['quantity']),
+                'length': float(m['opening_width']) if m else '', 'height': float(m['opening_height']) if m else '',
+                'hinge': m['direction'] if m else '',
+            })
+        start = 0
+        wanted = to_int(request.args.get('item', 0))
+        for index, item in enumerate(items):
+            if item['id'] == wanted:
+                start = index
+        return {'error': None, 'o': o, 'survey_items': items, 'survey_start': start}
+    except Exception as exc:
+        return {'error': str(exc), 'o': None, 'survey_items': [], 'survey_start': 0}
+
+
 def ctx_products(u):
+
     out = {'catalog_error': None, 'catalog': {}}
     if u['role'] != 'finance':
         try:
@@ -462,6 +494,8 @@ def build_context(u, page):
         ctx.update(ctx_orders(u, all_access))
     elif page == 'order':
         ctx.update(ctx_order(u, all_access))
+    elif page == 'survey':
+        ctx.update(ctx_survey(u, all_access))
     elif page == 'products':
         ctx.update(ctx_products(u))
     elif page == 'checkout':
@@ -474,7 +508,7 @@ def build_context(u, page):
         ctx.update(ctx_team(u))
     elif page == 'quotation_create':
         ctx.update(ctx_quotation_create(u, all_access))
-    elif page == 'quotations':
+    elif page in ('quotations', 'order_forms'):
         ctx.update(ctx_quotations(u))
     elif page == 'quote_templates':
         ctx.update(ctx_quote_templates(u))
@@ -539,6 +573,18 @@ def selfie():
     return response
 
 
+def wf_item_codes(item_ids):
+    ids = sorted({to_int(i) for i in item_ids if to_int(i)})
+    if not ids:
+        return {}
+    marks = ','.join(['%s'] * len(ids))
+    try:
+        found = db.rows('SELECT i.id,e.item_code,i.product_id FROM order_items i LEFT JOIN erp_products e ON e.product_id=i.product_id WHERE i.id IN (' + marks + ')', ids)
+    except Exception:
+        found = db.rows('SELECT id,NULL item_code,product_id FROM order_items WHERE id IN (' + marks + ')', ids)
+    return {int(row['id']): row['item_code'] or 'ITM-%04d' % int(row['product_id']) for row in found}
+
+
 def workflow_file():
     u = user()
     if not u:
@@ -592,9 +638,14 @@ def workflow_file():
             for line in lines:
                 line['m'] = json_obj(line.get('snapshot'))
             company = json_obj(quote['company_snapshot'])
+            order_form = 'order_form' in request.args
+            codes = wf_item_codes(line.get('order_item_id') for line in lines) if order_form else {}
+            for line in lines:
+                line['code'] = codes.get(to_int(line.get('order_item_id')), '')
+            label = 'Order Form' if order_form else 'Quotation'
             return render_template('document.html', kind='quotation', quote=quote, lines=lines, customer=customer, customer_meta=json_obj(quote.get('customer_details')),
-                                   company=company, historical=historical, order=order, quote_number=wf_quote_number(quote),
-                                   title='Quotation %s \u00b7 r%s' % (wf_quote_number(quote), quote['revision']))
+                                   company=company, historical=historical, order=order, quote_number=wf_quote_number(quote), order_form=order_form,
+                                   title='%s %s \u00b7 r%s' % (label, wf_quote_number(quote), quote['revision']))
         raise AppError('Document unavailable.')
     except Redirect:
         raise

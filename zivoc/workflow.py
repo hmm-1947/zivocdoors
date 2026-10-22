@@ -2,6 +2,8 @@ import json
 import re
 import secrets
 
+from flask import session
+
 from . import config, db
 from .core import AppError, add_days, files, filter_int, is_numeric, now, php_date, php_round, post, today, ucwords, utf8_len
 from .helpers import privileged, required, val
@@ -334,7 +336,49 @@ def wf_action(action, u, transaction=True):
         wf_invalidate(oid)
         db.q('UPDATE wf_surveys SET status=%s,revision=revision+1,updated_by=%s WHERE order_id=%s', [status, u['id'], oid])
         wf_log(oid, u, 'survey', 'Survey saved: ' + status + '. Previous drawings / quotation require revision.')
+    elif action == 'wf_survey_submit':
+        raw = post().get('survey', {})
+        items = wf_items(oid)
+        if not isinstance(raw, dict) or not items:
+            raise AppError('Complete the survey for every item.')
+        entries = []
+        for item in items:
+            row = raw.get(str(item['id']))
+            if not isinstance(row, dict):
+                raise AppError('Complete the survey for every item.')
+            hinge = wf_text(row.get('hinge', ''), 10)
+            if hinge not in ('Left', 'Right'):
+                raise AppError('Choose a hinge position for every item.')
+            try:
+                length = wf_number(row.get('length', ''), 0.1, 20000)
+                height = wf_number(row.get('height', ''), 0.1, 20000)
+            except AppError:
+                raise AppError('Enter a length and height between 0.1 and 20000 mm for every item.')
+            entries.append((item, length, height, hinge))
+        existing = {}
+        for row in db.rows('SELECT id,order_item_id FROM wf_measurements WHERE order_id=%s ORDER BY id', [oid]):
+            existing.setdefault(int(row['order_item_id']), int(row['id']))
+        db.q('UPDATE wf_measurements SET active=0 WHERE order_id=%s', [oid])
+        for item, length, height, hinge in entries:
+            values = {
+                'opening_width': length, 'opening_height': height, 'wall_thickness': 0,
+                'frame_width': length, 'frame_height': height, 'shutter_width': length, 'shutter_height': height,
+                'direction': hinge, 'opening_type': 'Inward', 'location': 'Survey completed', 'quantity': int(item['quantity']),
+            }
+            columns = list(values.keys())
+            params = [values[key] for key in columns]
+            record_id = existing.get(int(item['id']))
+            if record_id:
+                db.q('UPDATE wf_measurements SET ' + ','.join(key + '=%s' for key in columns) + ',active=1 WHERE id=%s AND order_id=%s',
+                     params + [record_id, oid])
+            else:
+                db.q(_insert_sql('wf_measurements', ['order_item_id'] + columns, ['order_id']), [oid, item['id']] + params)
+        wf_invalidate(oid)
+        db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
+        wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
+        session['quote_created_order'] = oid
     elif action == 'wf_survey_review':
+
         status = required('status')
         if status not in ('approved', 'revision_required') or survey['status'] not in ('completed', 'approved') or \
                 wf_id('revision', True) != int(survey['revision']):

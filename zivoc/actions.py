@@ -18,7 +18,7 @@ from .workflow import wf_action, wf_production_gate, wf_survey
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 SAVE_FORM_ACTIONS = ('wf_survey', 'wf_quote', 'qt_create', 'lead', 'lead_update')
 PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'calendar',
-         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates')
+         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms')
 MONTH_RE = re.compile(r'^20[0-9]{2}-(0[1-9]|1[0-2])$')
 
 
@@ -89,12 +89,12 @@ def _order(u):
     for product_id, qty, price in lines:
         db.q('INSERT INTO order_items(order_id,product_id,quantity,unit_price) VALUES (%s,%s,%s,%s)', [oid, product_id, qty, price])
     db.q('INSERT INTO wf_surveys(order_id,updated_by) VALUES (%s,%s)', [oid, u['id']])
-    db.q("INSERT INTO order_history(order_id,actor_id,stage,note) VALUES (%s,%s,'survey','Customer and products saved. Survey pending.')", [oid, u['id']])
+    db.q("INSERT INTO order_history(order_id,actor_id,stage,note) VALUES (%s,%s,'survey','Customer and products saved. Quotation pending.')", [oid, u['id']])
     if lead:
         db.q("UPDATE leads SET status='converted' WHERE id=%s", [lead_id])
     db.commit()
-    session['flash'] = 'Customer and products saved. Continue with survey, drawing and quotation.'
-    redirect('/?page=order&id=%d' % oid)
+    session['flash'] = 'Customer and products saved. Create the quotation draft.'
+    redirect('/?page=order&id=%d#wf-quotation' % oid)
 
 
 def _stage(u):
