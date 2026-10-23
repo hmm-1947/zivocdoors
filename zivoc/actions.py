@@ -11,6 +11,7 @@ from .helpers import csrf_token, next_stage, owner, positive, privileged, redire
 from .hr import hr_action, hr_lock
 from .leads import lead_create, lead_update
 from .team import sync_team
+from .doorhandles import dh_action
 from .quotations import qt_action
 from .uploads import image_info, read_upload
 from .workflow import wf_action, wf_production_gate, wf_survey
@@ -18,7 +19,7 @@ from .workflow import wf_action, wf_production_gate, wf_survey
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 SAVE_FORM_ACTIONS = ('wf_survey', 'wf_quote', 'qt_create', 'lead', 'lead_update')
 PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'calendar',
-         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms')
+         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles')
 MONTH_RE = re.compile(r'^20[0-9]{2}-(0[1-9]|1[0-2])$')
 
 
@@ -266,7 +267,7 @@ def _dispatch(action, u):
         raise AppError('Please sign in.')
     if u['role'] == 'freelancer' and action in ('attendance', 'leave_request', 'workdays'):
         raise AppError('Attendance is not available for freelancers.')
-    if qt_action(action, u) or wf_action(action, u) or hr_action(action, u):
+    if qt_action(action, u) or dh_action(action, u) or wf_action(action, u) or hr_action(action, u):
         session['flash'] = 'Saved successfully.'
         return
     if action == 'logout':
@@ -315,7 +316,10 @@ def handle_post():
         else:
             current_app.logger.exception('Unhandled error in action %s', action or 'unknown')
             session['error'] = 'The request could not be completed. Check the server log.'
+    to_list = session.pop('quote_to_list', None)
     created = session.pop('quote_created_order', None)
+    if to_list and 'error' not in session:
+        return redirect_response('/?page=quotations')
     if created is not None:
         created = int(created)
         quote = db.one('SELECT id FROM wf_quotations WHERE order_id=%s', [created])

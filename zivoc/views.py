@@ -11,6 +11,7 @@ from flask import Response, abort, current_app, jsonify, render_template, reques
 from . import actions, catalog as erp, config, db, schema
 from .core import (AppError, Redirect, add_days, add_months, fnum, hash_equals, hash_password, is_numeric, money, now, php_date, php_round, post,
                    random_hex, today, to_dt, verify_password)
+from .doorhandles import dh_brands
 from .drawing import wf_drawing_svg
 from .helpers import STAGES, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
 from .hr import hr_advance_total, hr_attendance, hr_employee, hr_month, hr_workdays
@@ -21,8 +22,8 @@ from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf
                        wf_ready, wf_survey)
 
 ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'checkout',
-                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms')
-NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'), ('order_forms', 'Order Form'),
+                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles')
+NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'),
        ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Commissions'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
 BOTTOM_NAV = (('home', 'Home'), ('leads', 'Leads'), ('orders', 'Orders'), ('products', 'Products'), ('profile', 'Profile'))
@@ -293,22 +294,35 @@ def ctx_survey(u, all_access):
         saved = {}
         for m in wf_measurements(oid):
             saved.setdefault(int(m['order_item_id']), m)
+        def side(m, key, fallback):
+            if not m:
+                return ''
+            raw = m.get(key)
+            if raw not in (None, ''):
+                return str(raw)
+            value = float(m[fallback] or 0)
+            return ('%g' % value) if value > 0 else ''
         items = []
         for item in wf_items(oid):
             m = saved.get(int(item['id']))
             items.append({
                 'id': int(item['id']), 'name': item['name'], 'quantity': int(item['quantity']),
-                'length': float(m['opening_width']) if m else '', 'height': float(m['opening_height']) if m else '',
+                'top': side(m, 'side_top', 'opening_width'), 'bottom': side(m, 'side_bottom', 'opening_width'),
+                'left': side(m, 'side_left', 'opening_height'), 'right': side(m, 'side_right', 'opening_height'),
+                'inner': (m.get('inner_detail') or '') if m else '',
                 'hinge': m['direction'] if m else '',
+                'brand_id': int(m['handle_brand_id']) if m and m.get('handle_brand_id') else '',
+                'brand': (m.get('handle_brand') or '') if m else '',
             })
         start = 0
         wanted = to_int(request.args.get('item', 0))
         for index, item in enumerate(items):
             if item['id'] == wanted:
                 start = index
-        return {'error': None, 'o': o, 'survey_items': items, 'survey_start': start}
+        brands = [{'id': int(b['id']), 'name': b['name'], 'company': b['company'] or '', 'details': b['details'] or ''} for b in dh_brands(True)]
+        return {'error': None, 'o': o, 'survey_items': items, 'survey_start': start, 'handle_brands': brands}
     except Exception as exc:
-        return {'error': str(exc), 'o': None, 'survey_items': [], 'survey_start': 0}
+        return {'error': str(exc), 'o': None, 'survey_items': [], 'survey_start': 0, 'handle_brands': []}
 
 
 def ctx_products(u):
@@ -512,6 +526,8 @@ def build_context(u, page):
         ctx.update(ctx_quotations(u))
     elif page == 'quote_templates':
         ctx.update(ctx_quote_templates(u))
+    elif page == 'door_handles':
+        ctx.update({'brands': dh_brands() if u['role'] == 'admin' else []})
     elif page in ('attendance', 'salary', 'calendar'):
         ctx.update(ctx_hr(u, page))
     return ctx
@@ -639,12 +655,14 @@ def workflow_file():
                 line['m'] = json_obj(line.get('snapshot'))
             company = json_obj(quote['company_snapshot'])
             order_form = 'order_form' in request.args
+            seller = db.one('SELECT name FROM users WHERE id=%s', [order['salesman_id']])
+            salesman_name = seller['name'] if seller else ''
             codes = wf_item_codes(line.get('order_item_id') for line in lines) if order_form else {}
             for line in lines:
                 line['code'] = codes.get(to_int(line.get('order_item_id')), '')
             label = 'Order Form' if order_form else 'Quotation'
             return render_template('document.html', kind='quotation', quote=quote, lines=lines, customer=customer, customer_meta=json_obj(quote.get('customer_details')),
-                                   company=company, historical=historical, order=order, quote_number=wf_quote_number(quote), order_form=order_form,
+                                   company=company, historical=historical, order=order, quote_number=wf_quote_number(quote), order_form=order_form, salesman_name=salesman_name,
                                    title='%s %s \u00b7 r%s' % (label, wf_quote_number(quote), quote['revision']))
         raise AppError('Document unavailable.')
     except Redirect:

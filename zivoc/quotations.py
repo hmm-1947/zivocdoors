@@ -166,7 +166,7 @@ def qt_action(action, u):
     data['order_id'] = oid
     data['revision'] = 0
     data['quote_items'] = quote_items
-    wf_action('wf_quote', u, False)
+    wf_action('wf_quote', u, False, True)
     contact = val('contact_date', 10)
     if contact != '':
         db.q('INSERT INTO reminders(salesman_id,order_id,lead_id,title,due_at) VALUES (%s,%s,%s,%s,%s)',
@@ -225,7 +225,8 @@ def qt_listing(data, u):
     where, params = qt_filter(data, u)
     return db.rows(
         'SELECT q.*,o.customer,o.phone,o.stage,o.id order_number,o.created_at entry_at,l.stage lead_stage,l.status_remark lead_status_remark,'
-        '(SELECT COALESCE(SUM(quantity),0) FROM wf_quotation_items qi WHERE qi.quotation_id=q.id) total_quantity '
+        '(SELECT COALESCE(SUM(quantity),0) FROM wf_quotation_items qi WHERE qi.quotation_id=q.id) total_quantity,'
+        '(SELECT status FROM wf_surveys sv WHERE sv.order_id=q.order_id) survey_status '
         'FROM wf_quotations q JOIN orders o ON o.id=q.order_id LEFT JOIN leads l ON l.id=o.lead_id WHERE ' + where + ' ORDER BY q.quote_date DESC,q.id DESC LIMIT 1000',
         params,
     )

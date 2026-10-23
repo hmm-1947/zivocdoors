@@ -64,6 +64,29 @@ def qt_ensure():
     db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('quotation_ui_v2','1')")
 
 
+def survey_ensure():
+    if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='survey_sides_v1'"):
+        return
+    db.q(
+        'CREATE TABLE IF NOT EXISTS door_handle_brands (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(150) NOT NULL, '
+        'company VARCHAR(190) NULL, details TEXT NULL, active BOOLEAN NOT NULL DEFAULT 1, created_by INT NOT NULL, '
+        'created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(created_by) REFERENCES users(id))'
+    )
+    columns = {
+        'side_top': 'VARCHAR(40) NULL',
+        'side_bottom': 'VARCHAR(40) NULL',
+        'side_left': 'VARCHAR(40) NULL',
+        'side_right': 'VARCHAR(40) NULL',
+        'inner_detail': 'VARCHAR(80) NULL',
+        'handle_brand_id': 'INT NULL',
+        'handle_brand': 'VARCHAR(150) NULL',
+    }
+    for column, definition in columns.items():
+        if not db.one("SHOW COLUMNS FROM wf_measurements LIKE '%s'" % column):
+            db.q('ALTER TABLE wf_measurements ADD COLUMN `%s` %s' % (column, definition))
+    db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('survey_sides_v1','1')")
+
+
 def lead_ensure():
     if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='lead_ui_v2'"):
         return
@@ -105,6 +128,7 @@ def ensure_all():
         hr_ensure()
         wf_ensure()
         qt_ensure()
+        survey_ensure()
         lead_ensure()
         team_ensure()
 

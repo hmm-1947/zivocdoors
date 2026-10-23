@@ -281,7 +281,7 @@ def _insert_sql(table, columns, leading=()):
     return 'INSERT INTO %s(%s) VALUES (%s)' % (table, ','.join(names), ','.join(['%s'] * len(names)))
 
 
-def wf_action(action, u, transaction=True):
+def wf_action(action, u, transaction=True, initial=False):
     from .quotations import qt_customer_details, qt_quote_rows, qt_template_id
     if not action.startswith('wf_'):
         return False
@@ -349,21 +349,37 @@ def wf_action(action, u, transaction=True):
             hinge = wf_text(row.get('hinge', ''), 10)
             if hinge not in ('Left', 'Right'):
                 raise AppError('Choose a hinge position for every item.')
+            sides = {}
             try:
-                length = wf_number(row.get('length', ''), 0.1, 20000)
-                height = wf_number(row.get('height', ''), 0.1, 20000)
+                for key in ('top', 'bottom', 'left', 'right'):
+                    sides[key] = wf_number(row.get(key, ''), 0.1, 20000)
             except AppError:
-                raise AppError('Enter a length and height between 0.1 and 20000 mm for every item.')
-            entries.append((item, length, height, hinge))
+                raise AppError('Enter the top, bottom, left and right measurements (0.1 to 20000 mm) for every item.')
+            inner = wf_text(row.get('inner', ''), 80)
+            if inner == '':
+                raise AppError('Enter the inner measurement for every item.')
+            brand_id = filter_int(row.get('brand_id', 0)) or 0
+            brand = None
+            if brand_id:
+                brand = db.one('SELECT id,name FROM door_handle_brands WHERE id=%s AND active=1', [brand_id])
+                if not brand:
+                    raise AppError('The selected door brand is no longer available.')
+            entries.append((item, sides, inner, hinge, brand))
         existing = {}
         for row in db.rows('SELECT id,order_item_id FROM wf_measurements WHERE order_id=%s ORDER BY id', [oid]):
             existing.setdefault(int(row['order_item_id']), int(row['id']))
         db.q('UPDATE wf_measurements SET active=0 WHERE order_id=%s', [oid])
-        for item, length, height, hinge in entries:
+        for item, sides, inner, hinge, brand in entries:
+            length = sides['top']
+            height = sides['left']
             values = {
                 'opening_width': length, 'opening_height': height, 'wall_thickness': 0,
                 'frame_width': length, 'frame_height': height, 'shutter_width': length, 'shutter_height': height,
                 'direction': hinge, 'opening_type': 'Inward', 'location': 'Survey completed', 'quantity': int(item['quantity']),
+                'side_top': '%g' % sides['top'], 'side_bottom': '%g' % sides['bottom'],
+                'side_left': '%g' % sides['left'], 'side_right': '%g' % sides['right'],
+                'inner_detail': inner,
+                'handle_brand_id': int(brand['id']) if brand else None, 'handle_brand': brand['name'] if brand else None,
             }
             columns = list(values.keys())
             params = [values[key] for key in columns]
@@ -442,13 +458,13 @@ def wf_action(action, u, transaction=True):
         db.q('UPDATE wf_drawings SET status=%s WHERE id=%s', [status, drawing['id']])
         wf_log(oid, u, 'drawing', 'Drawing #%s %s: %s' % (drawing['id'], status, required('note', 2000) if review else 'Sent for approval.'))
     elif action == 'wf_quote':
-        _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_template_id)
-    elif action in ('wf_quote_send', 'wf_quote_review'):
+        _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_template_id, initial)
+    elif action == 'wf_quote_review':
         quote = db.one('SELECT * FROM wf_quotations WHERE order_id=%s', [oid])
         if not quote or wf_id('revision', True) != int(quote['revision']):
             raise AppError('Review the current quotation.')
         effective = wf_quote_status(quote)
-        status = 'sent' if action == 'wf_quote_send' else required('status')
+        status = required('status')
         if effective == 'expired':
             raise AppError('Quotation expired. Revise validity before sending or approving.')
         if action == 'wf_quote_review' and status == 'approved':
@@ -460,9 +476,7 @@ def wf_action(action, u, transaction=True):
                 if line['measurement_id'] is None or int(line['measurement_id']) not in current or \
                         int(current[int(line['measurement_id'])]['id']) != int(line['drawing_id'] or 0):
                     raise AppError('A drawing changed. Save a revised quotation first.')
-        if action == 'wf_quote_send' and effective not in ('draft', 'revised', 'rejected'):
-            raise AppError('Save a draft or revision before sending.')
-        if action == 'wf_quote_review' and (effective != 'sent' or status not in ('approved', 'rejected')):
+        if effective != 'sent' or status not in ('approved', 'rejected'):
             raise AppError('Only sent quotations can be approved or rejected.')
         db.q('UPDATE wf_quotations SET status=%s,updated_by=%s WHERE id=%s', [status, u['id'], quote['id']])
         if status == 'approved':
@@ -476,7 +490,7 @@ def wf_action(action, u, transaction=True):
             for item in wf_items(oid):
                 db.q('UPDATE order_items SET unit_price=%s WHERE id=%s',
                      [php_round(by_item.get(int(item['id']), 0) / int(item['quantity']), 2), item['id']])
-        wf_log(oid, u, 'quotation', 'Quotation #%s %s: %s' % (quote['id'], status, required('note', 2000) if review else 'Marked sent; no email was sent.'))
+        wf_log(oid, u, 'quotation', 'Quotation #%s %s: %s' % (quote['id'], status, required('note', 2000)))
     elif action == 'wf_upload':
         kind = required('kind', 15)
         if kind not in ('survey', 'drawing'):
@@ -504,7 +518,7 @@ def wf_action(action, u, transaction=True):
     return True
 
 
-def _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_template_id):
+def _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_template_id, initial=False):
     data = post()
     quote = db.one('SELECT * FROM wf_quotations WHERE order_id=%s', [oid])
     if wf_id('revision', True) != (int(quote['revision']) if quote else 0):
@@ -513,6 +527,8 @@ def _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_temp
     if not isinstance(raw, dict):
         raise AppError('Invalid quotation lines.')
     measurements = qt_quote_rows(oid)
+    if not initial and any(not int(row['id']) or float(row.get('opening_width') or 0) <= 0 for row in measurements):
+        raise AppError('Complete the survey for every item before submitting the quotation.')
     if len(raw) != len(measurements):
         raise AppError('Quote every selected product / door group.')
     lines = []
@@ -571,7 +587,7 @@ def _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_temp
     version = int(quote['revision']) + 1 if quote else 1
     values = {
         'survey_revision': survey['revision'],
-        'status': 'revised' if quote else 'draft',
+        'status': 'sent',
         'quote_date': date,
         'valid_until': until,
     }
@@ -610,4 +626,5 @@ def _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_temp
     db.q('INSERT INTO wf_quotation_revisions(quotation_id,revision,payload,created_by) VALUES (%s,%s,%s,%s)',
          [qid, version, json.dumps({'quote': saved, 'items': lines, 'customer': customer}, default=str), u['id']])
     db.q("UPDATE orders SET stage='order' WHERE id=%s", [oid])
-    wf_log(oid, u, 'quotation', 'Quotation #%s revision %s saved.' % (qid, version))
+    wf_log(oid, u, 'quotation', 'Quotation #%s revision %s %s.' % (qid, version, 'created' if initial else 'submitted and sent'))
+    session['quote_to_list'] = True
