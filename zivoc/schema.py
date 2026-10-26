@@ -126,6 +126,26 @@ def team_ensure():
         db.q('ALTER TABLE users ADD COLUMN employee_id VARCHAR(60) NULL')
 
 
+def commission_ensure():
+    if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='commission_schemes_v1'"):
+        return
+    db.q(
+        'CREATE TABLE IF NOT EXISTS commission_schemes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(150) NOT NULL, '
+        'percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00, created_by INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, '
+        'UNIQUE KEY uq_commission_scheme_name (name))'
+    )
+    if not db.one("SHOW COLUMNS FROM users LIKE 'commission_scheme_id'"):
+        db.q('ALTER TABLE users ADD COLUMN commission_scheme_id INT NULL')
+    for row in db.rows("SELECT DISTINCT commission_rate FROM users WHERE role IN ('salesman','freelancer') AND commission_rate>0"):
+        rate = row['commission_rate']
+        label = ('%.2f' % float(rate)).rstrip('0').rstrip('.') + '% Commission'
+        db.q('INSERT IGNORE INTO commission_schemes(name,percentage) VALUES (%s,%s)', [label, rate])
+        scheme = db.one('SELECT id FROM commission_schemes WHERE name=%s', [label])
+        db.q("UPDATE users SET commission_scheme_id=%s WHERE role IN ('salesman','freelancer') AND commission_rate=%s AND commission_scheme_id IS NULL",
+             [scheme['id'], rate])
+    db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('commission_schemes_v1','1')")
+
+
 def ensure_all():
 
     if _ready['done']:
@@ -140,5 +160,6 @@ def ensure_all():
         brand_image_ensure()
         lead_ensure()
         team_ensure()
+        commission_ensure()
 
         _ready['done'] = True

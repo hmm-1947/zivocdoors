@@ -19,7 +19,7 @@ from .workflow import wf_action, wf_production_gate, wf_survey
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 SAVE_FORM_ACTIONS = ('wf_survey', 'wf_quote', 'qt_create', 'lead', 'lead_update')
 PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'calendar',
-         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles')
+         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes')
 MONTH_RE = re.compile(r'^20[0-9]{2}-(0[1-9]|1[0-2])$')
 
 
@@ -171,11 +171,44 @@ def _user_update(u):
     record = db.one('SELECT * FROM users WHERE id=%s', [user_id])
     if not record or record['role'] not in ('salesman', 'freelancer'):
         raise AppError('Sales member unavailable.')
-    rate = positive('commission_rate', True)
-    if rate > 100:
-        raise AppError('Invalid percentage.')
-    db.q('UPDATE users SET monthly_target=%s,commission_rate=%s,active=%s WHERE id=%s',
-         [positive('monthly_target', True), rate, 1 if val('active') == '1' else 0, user_id])
+    scheme_id = to_int(val('commission_scheme_id')) or None
+    rate = 0
+    if scheme_id:
+        scheme = db.one('SELECT id,percentage FROM commission_schemes WHERE id=%s', [scheme_id])
+        if not scheme:
+            raise AppError('Commission scheme unavailable.')
+        rate = scheme['percentage']
+    db.q('UPDATE users SET monthly_target=%s,commission_scheme_id=%s,commission_rate=%s,active=%s WHERE id=%s',
+         [positive('monthly_target', True), scheme_id, rate, 1 if val('active') == '1' else 0, user_id])
+
+
+def _commission_scheme(u):
+    require_admin(u)
+    scheme_id = to_int(val('scheme_id')) or 0
+    name = required('name', 150)
+    percentage = positive('percentage', True)
+    if percentage > 100:
+        raise AppError('Percentage must be between 0 and 100.')
+    if db.one('SELECT id FROM commission_schemes WHERE LOWER(name)=LOWER(%s) AND id<>%s', [name, scheme_id]):
+        raise AppError('A commission scheme with this name already exists.')
+    if scheme_id:
+        if not db.one('SELECT id FROM commission_schemes WHERE id=%s', [scheme_id]):
+            raise AppError('Commission scheme unavailable.')
+        db.q('UPDATE commission_schemes SET name=%s,percentage=%s WHERE id=%s', [name, percentage, scheme_id])
+        db.q('UPDATE users SET commission_rate=%s WHERE commission_scheme_id=%s', [percentage, scheme_id])
+    else:
+        db.q('INSERT INTO commission_schemes(name,percentage,created_by) VALUES (%s,%s,%s)', [name, percentage, u['id']])
+
+
+def _commission_scheme_delete(u):
+    require_admin(u)
+    scheme_id = to_int(val('scheme_id'))
+    if not db.one('SELECT id FROM commission_schemes WHERE id=%s', [scheme_id]):
+        raise AppError('Commission scheme unavailable.')
+    used = int(db.one('SELECT COUNT(*) n FROM users WHERE commission_scheme_id=%s', [scheme_id])['n'])
+    if used:
+        raise AppError('This scheme is assigned to %d team member(s). Reassign them first.' % used)
+    db.q('DELETE FROM commission_schemes WHERE id=%s', [scheme_id])
 
 
 def _paid(u):
@@ -252,6 +285,8 @@ SIMPLE_ACTIONS = {
     'reminder': _reminder,
     'team_sync': _team_sync,
     'user_update': _user_update,
+    'commission_scheme': _commission_scheme,
+    'commission_scheme_delete': _commission_scheme_delete,
     'paid': _paid,
     'password': _password,
     'attendance': _attendance,

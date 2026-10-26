@@ -22,7 +22,7 @@ from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf
                        wf_ready, wf_survey)
 
 ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'checkout',
-                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles')
+                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes')
 NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'),
        ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Commissions'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
@@ -379,7 +379,9 @@ def ctx_commissions(u, all_access):
 
 def ctx_team(u=None):
     sync = sync_team(force=False) if u and u['role'] == 'admin' else None
-    return {'sync': sync, 'team': db.rows('SELECT id,name,username,email,role,monthly_target,commission_rate,active FROM users ORDER BY id DESC')}
+    return {'sync': sync, 'team': db.rows('SELECT id,name,username,email,role,monthly_target,commission_rate,commission_scheme_id,active FROM users ORDER BY id DESC'),
+            'schemes': db.rows('SELECT id,name,percentage FROM commission_schemes ORDER BY name')}
+
 
 
 def ctx_quotation_create(u, all_access):
@@ -518,6 +520,8 @@ def build_context(u, page):
         ctx.update(ctx_reminders(u))
     elif page == 'commissions':
         ctx.update(ctx_commissions(u, all_access))
+    elif page == 'commission_schemes':
+        ctx.update({'schemes': db.rows('SELECT s.*,(SELECT COUNT(*) FROM users x WHERE x.commission_scheme_id=s.id) members FROM commission_schemes s ORDER BY s.name')})
     elif page == 'team':
         ctx.update(ctx_team(u))
     elif page == 'quotation_create':
@@ -547,7 +551,7 @@ def index():
     page = request.args.get('page', 'home')
     if page not in ALLOWED_PAGES:
         page = 'home'
-    if page == 'team' and (not u or u['role'] != 'admin'):
+    if page in ('team', 'commission_schemes') and (not u or u['role'] != 'admin'):
         page = 'home'
     notices = []
     for key in ('flash', 'error'):
