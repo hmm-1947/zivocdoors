@@ -114,3 +114,19 @@ def next_stage(stage):
         'finance': 'production',
         'verified': 'production',
     }.get(stage)
+
+
+def cm_text(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return '' if value is None else value
+    return '%g' % round(number / 10, 3)
+
+
+def cm_unit(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return '' if value is None else value
+    return '%g cm' % round(number / 10, 3)

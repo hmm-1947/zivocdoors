@@ -125,7 +125,7 @@ def wf_validate_measurements(raw, items, complete=True):
                 entry[key] = wf_number(0 if value == '' else value, 0.1 if complete else 0, 20000)
             except AppError:
                 raise AppError(label + ' must be ' + ('greater than zero' if complete else 'zero or greater') +
-                               ' and at most 20000 mm. Save Pending to keep incomplete measurements.')
+                               ' and at most 2000 cm. Save Pending to keep incomplete measurements.')
         if complete and (entry['frame_width'] > entry['opening_width'] or entry['frame_height'] > entry['opening_height'] or
                          entry['shutter_width'] > entry['frame_width'] or entry['shutter_height'] > entry['frame_height']):
             raise AppError('Shutter dimensions must fit within the frame, and the frame within the opening.')
@@ -355,7 +355,7 @@ def wf_action(action, u, transaction=True, initial=False):
                 for key in ('top', 'bottom', 'left', 'right'):
                     sides[key] = wf_number(row.get(key, ''), 0.1, 20000)
             except AppError:
-                raise AppError('Enter the top, bottom, left and right measurements (0.1 to 20000 mm) for every item.')
+                raise AppError('Enter the top, bottom, left and right measurements (0.01 to 2000 cm) for every item.')
             inner = wf_text(row.get('inner', ''), 80)
             if inner == '':
                 raise AppError('Enter the inner measurement for every item.')

@@ -7,10 +7,10 @@
 <div class="sv-progress">{% for it in survey_items %}<button type="button" class="sv-pill" data-sv-pill="{{ loop.index0 }}" data-name="{{ it['name'] }}" data-qty="{{ it['quantity'] }}" data-brand-name="{{ it['brand'] }}"><span class="sv-pill-no">{{ loop.index }}</span><span class="sv-pill-name">{{ it['name'] }}</span></button>{% endfor %}</div>
 <div class="sv-head"><div><span class="eyebrow" data-sv-count></span><h2 data-sv-name></h2><p class="muted" data-sv-qty></p></div><span class="badge" data-sv-status></span></div>
 <div class="sv-stage"><div class="sv-figure">
-<label class="sv-side sv-top">Top (mm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 900" data-sv-input="top"></label>
-<label class="sv-side sv-bottom">Bottom (mm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 900" data-sv-input="bottom"></label>
-<label class="sv-side sv-left">Left (mm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 2100" data-sv-input="left"></label>
-<label class="sv-side sv-right">Right (mm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 2100" data-sv-input="right"></label>
+<label class="sv-side sv-top">Top (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="top"></label>
+<label class="sv-side sv-bottom">Bottom (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="bottom"></label>
+<label class="sv-side sv-left">Left (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="left"></label>
+<label class="sv-side sv-right">Right (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="right"></label>
 <label class="sv-side sv-inner">Inner<input type="text" autocomplete="off" maxlength="80" placeholder="Inner size" data-sv-input="inner"></label>
 <svg class="sv-door" viewBox="0 30 300 430" role="img" aria-label="Door frame technical drawing" data-hinge="">
 <defs><pattern id="sv-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a90a0" stroke-width="1"/></pattern></defs>

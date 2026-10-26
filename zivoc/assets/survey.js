@@ -16,6 +16,8 @@ const dialog=q('[data-sv-dialog]'),brandList=q('[data-sv-brand-list]'),brandLabe
 let brands=[];try{brands=JSON.parse(root.dataset.brands||'[]');}catch(e){brands=[];}
 const defaultHint=hintEl.textContent;
 let current=Math.min(Math.max(Number(root.dataset.start)||0,0),total-1);
+const toCm=v=>{const t=String(v).trim(),n=Number(t);return t!==''&&Number.isFinite(n)?String(Number((n/10).toFixed(3))):v;};
+const toMm=v=>{const t=String(v).trim(),n=Number(t);return t!==''&&Number.isFinite(n)?String(Number((n*10).toFixed(2))):v;};
 const validNum=text=>{const n=Number(text);return String(text).trim()!==''&&Number.isFinite(n)&&n>=0.1&&n<=20000;};
 const done=i=>sideKeys.every(k=>validNum(field(i,k).value))&&field(i,'inner').value.trim()!==''&&['Left','Right'].includes(field(i,'hinge').value);
 const allDone=()=>pills.every((_,i)=>done(i));
@@ -44,13 +46,13 @@ function render(){
  countEl.textContent='ITEM '+(current+1)+' OF '+total;
  nameEl.textContent=pill.dataset.name;
  qtyEl.textContent='Quantity '+pill.dataset.qty+(Number(pill.dataset.qty)>1?' · these measurements apply to every door of this item.':'');
- Object.keys(inputs).forEach(k=>{inputs[k].value=field(current,k).value;});
+ Object.keys(inputs).forEach(k=>{inputs[k].value=toCm(field(current,k).value);});
  radios.forEach(r=>{r.checked=r.value===field(current,'hinge').value;});
  showError('');
  refresh();
 }
 function go(index){current=index;render();inputs.top.focus({preventScroll:true});window.scrollTo({top:root.getBoundingClientRect().top+window.scrollY-20,behavior:'smooth'});}
-Object.keys(inputs).forEach(k=>inputs[k].addEventListener('input',()=>{field(current,k).value=inputs[k].value;showError('');refresh();}));
+Object.keys(inputs).forEach(k=>inputs[k].addEventListener('input',()=>{field(current,k).value=toMm(inputs[k].value);showError('');refresh();}));
 radios.forEach(r=>r.addEventListener('change',()=>{if(r.checked){field(current,'hinge').value=r.value;showError('');refresh();}}));
 backBtn.addEventListener('click',()=>{if(current>0)go(current-1);});
 nextBtn.addEventListener('click',()=>{if(!done(current)){showError('Enter the top, bottom, left, right and inner measurements and the hinge position to continue.');return;}if(current<total-1)go(current+1);});

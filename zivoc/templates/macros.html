@@ -7,14 +7,14 @@
 {% if edit %}<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="wf_upload"><input type="hidden" name="order_id" value="{{ o['id'] }}"><input type="hidden" name="kind" value="{{ kind }}">{% if kind == 'drawing' %}<label>Attach to drawing revision (optional)<select name="drawing_id"><option value="">Order-level attachment</option>{% for d in drawing_options %}<option value="{{ d['id'] }}">Drawing #{{ d['id'] }} · Measurement #{{ d['measurement_id'] }} · r{{ d['revision'] }}</option>{% endfor %}</select></label>{% endif %}<label>Choose file<input type="file" name="attachment" accept="{{ '.jpg,.jpeg,.png' if kind == 'survey' else '.pdf,.png,.jpg,.jpeg,.dwg,.dxf' }}"></label><button>Upload attachment</button></form>{% endif %}</details>
 {% endmacro %}
 {% macro survey_door(length, height, hinge, uid) %}
-<svg class="of-door" viewBox="0 -16 360 486" role="img" aria-label="Door drawing {{ '%g' % length }} x {{ '%g' % height }} mm, {{ hinge }} hinge" xmlns="http://www.w3.org/2000/svg">
+<svg class="of-door" viewBox="0 -16 360 486" role="img" aria-label="Door drawing {{ length|cm }} x {{ height|cm }} cm, {{ hinge }} hinge" xmlns="http://www.w3.org/2000/svg">
 <defs><pattern id="hatch-{{ uid }}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a90a0" stroke-width="1"/></pattern>
 <marker id="arrow-{{ uid }}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#202127"/></marker></defs>
 <g stroke="#6b7280" stroke-width="0.8"><line x1="20" y1="8" x2="20" y2="38"/><line x1="280" y1="8" x2="280" y2="38"/><line x1="282" y1="40" x2="322" y2="40"/><line x1="282" y1="450" x2="322" y2="450"/></g>
 <line x1="20" y1="18" x2="280" y2="18" stroke="#202127" stroke-width="1.2" marker-start="url(#arrow-{{ uid }})" marker-end="url(#arrow-{{ uid }})"/>
 <line x1="312" y1="40" x2="312" y2="450" stroke="#202127" stroke-width="1.2" marker-start="url(#arrow-{{ uid }})" marker-end="url(#arrow-{{ uid }})"/>
-<text x="150" y="3" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#202127">{{ '%g' % length }} mm</text>
-<text transform="translate(338 245) rotate(-90)" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#202127">{{ '%g' % height }} mm</text>
+<text x="150" y="3" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#202127">{{ length|cm }} cm</text>
+<text transform="translate(338 245) rotate(-90)" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#202127">{{ height|cm }} cm</text>
 <path d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#hatch-{{ uid }})" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
 <rect x="30" y="50" width="240" height="400" fill="#f7f6fb"/>
 <rect x="34" y="54" width="232" height="392" fill="#ffffff" stroke="#202127" stroke-width="1.5"/>
@@ -34,7 +34,7 @@
 {% endmacro %}
 {% macro sheet_door(m, hinge, uid) %}
 {% set top = m.get('side_top') or ('%g' % (m.get('opening_width')|float)) %}{% set bottom = m.get('side_bottom') or top %}{% set left = m.get('side_left') or ('%g' % (m.get('opening_height')|float)) %}{% set right = m.get('side_right') or left %}
-<div class="os-door"><span class="os-dim os-top">{{ top }} mm</span><span class="os-dim os-bottom">{{ bottom }} mm</span><span class="os-dim os-left">{{ left }} mm</span><span class="os-dim os-right">{{ right }} mm</span><span class="os-dim os-inner">{{ m.get('inner_detail') or '' }}{{ ' mm' if m.get('inner_detail') else '' }}</span>
+<div class="os-door"><span class="os-dim os-top">{{ top|cmu }}</span><span class="os-dim os-bottom">{{ bottom|cmu }}</span><span class="os-dim os-left">{{ left|cmu }}</span><span class="os-dim os-right">{{ right|cmu }}</span><span class="os-dim os-inner">{{ (m.get('inner_detail') or '')|cmu }}</span>
 <svg viewBox="0 30 300 430" role="img" aria-label="Door drawing, {{ hinge }} hinge" xmlns="http://www.w3.org/2000/svg">
 <defs><pattern id="oh-{{ uid }}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a90a0" stroke-width="1"/></pattern></defs>
 <path d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#oh-{{ uid }})" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>

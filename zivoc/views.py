@@ -13,7 +13,7 @@ from .core import (AppError, Redirect, add_days, add_months, fnum, hash_equals, 
                    random_hex, today, to_dt, verify_password)
 from .doorhandles import dh_brands
 from .drawing import wf_drawing_svg
-from .helpers import STAGES, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
+from .helpers import STAGES, cm_text, cm_unit, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
 from .hr import hr_advance_total, hr_attendance, hr_employee, hr_month, hr_workdays
 from .leads import lead_form_values, lead_listing, party_people
 from .avatars import refresh as avatar_refresh
@@ -873,6 +873,7 @@ def pos_sync():
 def register(app):
     from . import ui
     ui.register(app)
+    app.jinja_env.filters.update(cm=cm_text, cmu=cm_unit)
     app.jinja_env.globals.update(
         wf_label=wf_label, wf_quote_number=wf_quote_number, wf_quote_status=wf_quote_status, wf_can_edit=wf_can_edit, wf_latest_drawing=wf_latest_drawing,
         positive_value=positive_value, privileged=privileged, WF_MEASURES=WF_MEASURES, STAGES=STAGES, csrf_token=csrf_token, to_int=to_int,

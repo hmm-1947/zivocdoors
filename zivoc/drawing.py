@@ -52,14 +52,14 @@ def wf_drawing_svg(payload):
     svg = (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 920" width="1000" height="920" role="img" '
         'aria-labelledby="drawing-title drawing-desc"><title id="drawing-title">' + name + ' technical door drawing</title>'
-        '<desc id="drawing-desc">Dimensioned front elevation and swing plan, in millimetres. Verify on site before manufacture.</desc>'
+        '<desc id="drawing-desc">Dimensioned front elevation and swing plan, in centimetres. Verify on site before manufacture.</desc>'
         '<defs><marker id="dim-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
         '<path d="M 0 0 L 10 5 L 0 10 Z" fill="#24334b"/></marker></defs><rect width="1000" height="920" fill="white"/>'
         '<g font-family="Arial,sans-serif" fill="#17263d"><rect x="24" y="24" width="952" height="872" fill="none" stroke="#24334b"/>'
         '<text x="45" y="57" font-size="21" font-weight="700">FRP DOOR \u2014 TECHNICAL DRAWING</text>'
         '<text x="45" y="82" font-size="13">' + name + ' | Order #' + str(order_id) + ' | Survey r' + str(int(payload['survey_revision'])) +
         ' | Drawing r' + str(int(payload['revision'])) + '</text><path d="M24 96H976" stroke="#24334b"/>'
-        '<text x="300" y="117" text-anchor="middle" font-size="12">FRONT ELEVATION \u2014 DIMENSIONS IN mm</text>'
+        '<text x="300" y="117" text-anchor="middle" font-size="12">FRONT ELEVATION \u2014 DIMENSIONS IN cm</text>'
     )
     svg += (
         '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" fill="none" stroke="#8592a6" stroke-dasharray="6 4"/>'
@@ -73,11 +73,11 @@ def wf_drawing_svg(payload):
         f(y) + ' H ' + f(x - 58) + ' M ' + f(x) + ' ' + f(y + h) + ' H ' + f(x - 58) + ' M ' + f(fx + fw * scale) + ' ' + f(fy) + ' H ' +
         f(x + w + 48) + ' M ' + f(fx + fw * scale) + ' ' + f(fy + fh * scale) + ' H ' + f(x + w + 48) + '" fill="none" stroke="#8592a6" stroke-width="0.8"/>'
     )
-    svg += wf_dim(x, y + h + 40, x + w, y + h + 40, 'Opening W ' + f(ow) + ' mm')
-    svg += wf_dim(x - 50, y, x - 50, y + h, 'Opening H ' + f(oh) + ' mm', True)
-    svg += wf_dim(fx, y + h + 75, fx + fw * scale, y + h + 75, 'Frame W ' + f(fw) + ' mm')
-    svg += wf_dim(x + w + 40, fy, x + w + 40, fy + fh * scale, 'Frame H ' + f(fh) + ' mm', True)
-    svg += '<text x="300" y="' + f(y + h / 2) + '" font-size="12" text-anchor="middle">Shutter ' + f(sw) + ' \u00d7 ' + f(sh) + ' mm</text>'
+    svg += wf_dim(x, y + h + 40, x + w, y + h + 40, 'Opening W ' + f(ow / 10) + ' cm')
+    svg += wf_dim(x - 50, y, x - 50, y + h, 'Opening H ' + f(oh / 10) + ' cm', True)
+    svg += wf_dim(fx, y + h + 75, fx + fw * scale, y + h + 75, 'Frame W ' + f(fw / 10) + ' cm')
+    svg += wf_dim(x + w + 40, fy, x + w + 40, fy + fh * scale, 'Frame H ' + f(fh / 10) + ' cm', True)
+    svg += '<text x="300" y="' + f(y + h / 2) + '" font-size="12" text-anchor="middle">Shutter ' + f(sw / 10) + ' \u00d7 ' + f(sh / 10) + ' cm</text>'
     ps = min(220 / ow, 90 / wall)
     pw = ow * ps
     leaf = sw * ps
@@ -100,7 +100,7 @@ def wf_drawing_svg(payload):
         f(py) + ' A ' + f(leaf) + ' ' + f(leaf) + ' 0 0 ' + str(sweep) + ' ' + f(hx) + ' ' + f(ey) +
         '" fill="none" stroke="#24334b" stroke-dasharray="5 3"/><circle cx="' + f(hx) + '" cy="' + f(py) + '" r="4" fill="#17263d"/>'
     )
-    svg += wf_dim(px + pw + 62, py, px + pw + 62, py + depth, 'Wall ' + f(wall) + ' mm', True)
+    svg += wf_dim(px + pw + 62, py, px + pw + 62, py + depth, 'Wall ' + f(wall / 10) + ' cm', True)
     svg += (
         '<text x="715" y="620" text-anchor="middle" font-size="14">' + wf_xml(m['direction'] + ' Hand / ' + m['opening_type']) +
         '</text><text x="715" y="645" text-anchor="middle" font-size="12">Plan: inward is above the wall line</text>'
