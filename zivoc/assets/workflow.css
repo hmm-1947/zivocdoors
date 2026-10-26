@@ -36,3 +36,4 @@
 @media(max-width:700px){main{padding-bottom:calc(110px + env(safe-area-inset-bottom))}}
 .sv-inner{top:37%;width:84px;padding:3px 4px}.sv-inner input{height:40px;font-size:15px}
 @media(max-width:700px){.sv-inner{top:37%;width:64px}.sv-inner input{height:38px;font-size:14px}}
+.ol-survey-m{display:none!important}@media(max-width:700px){.ol-survey-m{display:inline-flex!important}}
