@@ -28,3 +28,6 @@
 @media print{.wf-document .os-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8mm 4mm}.wf-document .os-sheet{padding:0}.os-door{margin:6mm 6mm}}
 .sv-brand-item img{width:56px;height:56px;object-fit:cover;border-radius:8px;display:block;margin-bottom:6px}
 .dh-thumb{width:96px;height:96px;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px}
+.sv-side{font-size:14px;font-weight:800;color:#202127;width:130px}.sv-side input{height:48px;padding:6px 10px;font-size:19px;font-weight:800;color:#202127;border:2.5px solid #202127;border-radius:10px;background:#fff}.sv-inner{width:110px}.sv-inner input{font-size:16px}
+.os-dim{font-size:11px;font-weight:800}
+@media(max-width:700px){.sv-side{width:96px;font-size:12px}.sv-side input{height:44px;font-size:16px}.sv-inner{width:88px}}

@@ -13,22 +13,22 @@
 <g stroke="#6b7280" stroke-width="0.8"><line x1="20" y1="8" x2="20" y2="38"/><line x1="280" y1="8" x2="280" y2="38"/><line x1="282" y1="40" x2="322" y2="40"/><line x1="282" y1="450" x2="322" y2="450"/></g>
 <line x1="20" y1="18" x2="280" y2="18" stroke="#202127" stroke-width="1.2" marker-start="url(#arrow-{{ uid }})" marker-end="url(#arrow-{{ uid }})"/>
 <line x1="312" y1="40" x2="312" y2="450" stroke="#202127" stroke-width="1.2" marker-start="url(#arrow-{{ uid }})" marker-end="url(#arrow-{{ uid }})"/>
-<text x="150" y="3" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#202127">{{ '%g' % length }} mm</text>
-<text transform="translate(338 245) rotate(-90)" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#202127">{{ '%g' % height }} mm</text>
-<path d="M20 40 H280 V450 H260 V60 H40 V450 H20 Z" fill="url(#hatch-{{ uid }})" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
-<rect x="40" y="60" width="220" height="390" fill="#f7f6fb"/>
-<rect x="44" y="64" width="212" height="382" fill="#ffffff" stroke="#202127" stroke-width="1.5"/>
+<text x="150" y="3" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#202127">{{ '%g' % length }} mm</text>
+<text transform="translate(338 245) rotate(-90)" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#202127">{{ '%g' % height }} mm</text>
+<path d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#hatch-{{ uid }})" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
+<rect x="30" y="50" width="240" height="400" fill="#f7f6fb"/>
+<rect x="34" y="54" width="232" height="392" fill="#ffffff" stroke="#202127" stroke-width="1.5"/>
 
 
 <path d="M4 450 H296" stroke="#202127" stroke-width="2.4"/>
 {% if hinge == 'Right' %}
-<path d="M256 255 L44 64 M256 255 L44 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/>
-{% for cy in (110, 255, 400) %}<g transform="translate(258 {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/><circle cx="0" cy="-11" r="1.6" fill="#202127"/><circle cx="0" cy="11" r="1.6" fill="#202127"/></g>{% endfor %}
-<rect x="59" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="64" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="68" cy="257" r="4" fill="#202127"/>
+<path d="M266 255 L34 54 M266 255 L34 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/>
+{% for cy in (110, 255, 400) %}<g transform="translate(268 {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/><circle cx="0" cy="-11" r="1.6" fill="#202127"/><circle cx="0" cy="11" r="1.6" fill="#202127"/></g>{% endfor %}
+<rect x="49" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="54" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="58" cy="257" r="4" fill="#202127"/>
 {% else %}
-<path d="M44 255 L256 64 M44 255 L256 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/>
-{% for cy in (110, 255, 400) %}<g transform="translate(42 {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/><circle cx="0" cy="-11" r="1.6" fill="#202127"/><circle cx="0" cy="11" r="1.6" fill="#202127"/></g>{% endfor %}
-<rect x="223" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="196" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="232" cy="257" r="4" fill="#202127"/>
+<path d="M34 255 L266 54 M34 255 L266 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/>
+{% for cy in (110, 255, 400) %}<g transform="translate(32 {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/><circle cx="0" cy="-11" r="1.6" fill="#202127"/><circle cx="0" cy="11" r="1.6" fill="#202127"/></g>{% endfor %}
+<rect x="233" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="206" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="242" cy="257" r="4" fill="#202127"/>
 {% endif %}
 </svg>
 {% endmacro %}
@@ -37,13 +37,13 @@
 <div class="os-door"><span class="os-dim os-top">{{ top }} mm</span><span class="os-dim os-bottom">{{ bottom }} mm</span><span class="os-dim os-left">{{ left }} mm</span><span class="os-dim os-right">{{ right }} mm</span><span class="os-dim os-inner">{{ m.get('inner_detail') or '' }}{{ ' mm' if m.get('inner_detail') else '' }}</span>
 <svg viewBox="0 30 300 430" role="img" aria-label="Door drawing, {{ hinge }} hinge" xmlns="http://www.w3.org/2000/svg">
 <defs><pattern id="oh-{{ uid }}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a90a0" stroke-width="1"/></pattern></defs>
-<path d="M20 40 H280 V450 H260 V60 H40 V450 H20 Z" fill="url(#oh-{{ uid }})" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
-<rect x="40" y="60" width="220" height="390" fill="#f7f6fb"/>
-<rect x="44" y="64" width="212" height="382" fill="#ffffff" stroke="#202127" stroke-width="1.5"/>
+<path d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#oh-{{ uid }})" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
+<rect x="30" y="50" width="240" height="400" fill="#f7f6fb"/>
+<rect x="34" y="54" width="232" height="392" fill="#ffffff" stroke="#202127" stroke-width="1.5"/>
 <path d="M4 450 H296" stroke="#202127" stroke-width="2.4"/>
-{% set hx = 258 if hinge == 'Right' else 42 %}{% set hs = -1 if hinge == 'Right' else 1 %}
-<path d="M{{ 256 if hinge == 'Right' else 44 }} 255 L{{ 44 if hinge == 'Right' else 256 }} 64 M{{ 256 if hinge == 'Right' else 44 }} 255 L{{ 44 if hinge == 'Right' else 256 }} 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/>
+{% set hx = 268 if hinge == 'Right' else 32 %}{% set hs = -1 if hinge == 'Right' else 1 %}
+<path d="M{{ 266 if hinge == 'Right' else 34 }} 255 L{{ 34 if hinge == 'Right' else 266 }} 54 M{{ 266 if hinge == 'Right' else 34 }} 255 L{{ 34 if hinge == 'Right' else 266 }} 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/>
 {% for cy in (110, 255, 400) %}<g transform="translate({{ hx }} {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/></g>{% endfor %}
-{% if hinge == 'Right' %}<rect x="59" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="64" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="68" cy="257" r="4" fill="#202127"/>{% else %}<rect x="223" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="196" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="232" cy="257" r="4" fill="#202127"/>{% endif %}
+{% if hinge == 'Right' %}<rect x="49" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="54" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="58" cy="257" r="4" fill="#202127"/>{% else %}<rect x="233" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="206" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="242" cy="257" r="4" fill="#202127"/>{% endif %}
 </svg></div>
 {% endmacro %}
