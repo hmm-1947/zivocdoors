@@ -16,7 +16,9 @@ from .drawing import wf_drawing_svg
 from .helpers import STAGES, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
 from .hr import hr_advance_total, hr_attendance, hr_employee, hr_month, hr_workdays
 from .leads import lead_form_values, lead_listing, party_people
+from .avatars import refresh as avatar_refresh
 from .team import sync_team
+
 from .quotations import qt_failed_form, qt_listing, qt_quote_rows
 from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf_latest_drawing, wf_measurements, wf_quote_number, wf_quote_status,
                        wf_ready, wf_survey)
@@ -379,7 +381,7 @@ def ctx_commissions(u, all_access):
 
 def ctx_team(u=None):
     sync = sync_team(force=False) if u and u['role'] == 'admin' else None
-    return {'sync': sync, 'team': db.rows('SELECT id,name,username,email,role,monthly_target,commission_rate,commission_scheme_id,active FROM users ORDER BY id DESC'),
+    return {'sync': sync, 'team': db.rows('SELECT id,name,username,email,role,monthly_target,commission_rate,commission_scheme_id,active,avatar FROM users ORDER BY id DESC'),
             'schemes': db.rows('SELECT id,name,percentage FROM commission_schemes ORDER BY name')}
 
 
@@ -549,6 +551,9 @@ def index():
     if request.method == 'POST':
         return actions.handle_post()
     page = request.args.get('page', 'home')
+    if u and u.get('employee_id') and avatar_refresh(u):
+        reset_user_cache()
+        u = user()
     if page not in ALLOWED_PAGES:
         page = 'home'
     if page in ('team', 'commission_schemes') and (not u or u['role'] != 'admin'):
@@ -590,6 +595,23 @@ def selfie():
     mime = {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}.get(path.suffix.lstrip('.').lower(), 'application/octet-stream')
     response = send_file(path, mimetype=mime)
     response.headers['Content-Disposition'] = 'inline'
+    return response
+
+
+def avatar():
+    u = user()
+    if not u:
+        abort(401)
+    record = db.one('SELECT avatar FROM users WHERE id=%s', [to_int(request.args.get('id', 0))])
+    if not record or not record['avatar']:
+        abort(404)
+    path = config.AVATAR_DIR / re.split(r'[\\/]', record['avatar'])[-1]
+    if not path.is_file():
+        abort(404)
+    mime = {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}.get(path.suffix.lstrip('.').lower(), 'application/octet-stream')
+    response = send_file(path, mimetype=mime)
+    response.headers['Content-Disposition'] = 'inline'
+    response.headers['Cache-Control'] = 'private, max-age=86400'
     return response
 
 
@@ -863,6 +885,7 @@ def register(app):
     app.add_url_rule('/reminders', 'reminders_json', reminders_json)
     app.add_url_rule('/selfie', 'selfie', selfie)
     app.add_url_rule('/brand-image', 'brand_image', brand_image)
+    app.add_url_rule('/avatar', 'avatar', avatar)
     app.add_url_rule('/workflow-file', 'workflow_file', workflow_file)
     app.add_url_rule('/quotations-export', 'quotations_export', quotations_export)
     app.add_url_rule('/install', 'install', install, methods=['GET', 'POST'])

@@ -6,7 +6,9 @@ import time
 import requests
 
 from . import config, db
+from . import avatars
 from .core import hash_password
+
 
 DEFAULT_PASSWORD = 'Apple@123'
 ROLE_MAP = {'salesman': 'salesman', 'freelancer': 'freelancer', 'dsh-finance': 'finance', 'dsh-admin': 'admin'}
@@ -26,7 +28,7 @@ def _fetch():
     token = config.ERP_TOKEN
     if not token:
         return None, 'ERP token is not configured.'
-    fields = ['name', 'employee_name', 'employment_type', 'status', 'company_email', 'personal_email', 'prefered_email', 'cell_number']
+    fields = ['name', 'employee_name', 'employment_type', 'status', 'company_email', 'personal_email', 'prefered_email', 'cell_number', 'image']
     try:
         response = requests.get(config.ERP_BASE_URL + '/api/resource/Employee', params={'fields': json.dumps(fields), 'limit_page_length': 5000},
                                 headers={'Authorization': 'token ' + token, 'Accept': 'application/json'}, timeout=(10, 30))
@@ -36,6 +38,15 @@ def _fetch():
     if response.status_code != 200 or not isinstance(data, dict) or not isinstance(data.get('data'), list):
         return None, 'Employees could not be loaded from ERP.'
     return data['data'], ''
+
+
+def _sync_avatar(code, item):
+    try:
+        record = db.one('SELECT * FROM users WHERE employee_id=%s', [code])
+        if record:
+            avatars.pull(record, item.get('image'))
+    except Exception:
+        pass
 
 
 def sync_team(force=True):
@@ -68,10 +79,12 @@ def sync_team(force=True):
             if record:
                 db.q('UPDATE users SET employee_id=%s,name=%s,role=%s' + (',active=0' if not active else '') + ' WHERE id=%s', [code, name, role, record['id']])
                 updated += 1
+                _sync_avatar(code, item)
             else:
                 if default_hash is None:
                     default_hash = hash_password(DEFAULT_PASSWORD)
                 db.q('INSERT INTO users(name,username,email,password,role,monthly_target,commission_rate,active,employee_id) VALUES (%s,%s,%s,%s,%s,0,0,%s,%s)',
                      [name, username, email, default_hash, role, active, code])
                 added += 1
+                _sync_avatar(code, item)
         return {'added': added, 'updated': updated, 'error': ''}

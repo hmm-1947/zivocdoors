@@ -10,7 +10,9 @@ from .core import AppError, Redirect, files, filter_int, hash_equals, hash_passw
 from .helpers import csrf_token, next_stage, owner, positive, privileged, redirect, require_admin, required, salesman, to_int, user, val, reset_user_cache
 from .hr import hr_action, hr_lock
 from .leads import lead_create, lead_update
+from .avatars import avatar_upload
 from .team import sync_team
+
 from .doorhandles import dh_action
 from .quotations import qt_action
 from .uploads import image_info, read_upload
@@ -285,6 +287,7 @@ SIMPLE_ACTIONS = {
     'reminder': _reminder,
     'team_sync': _team_sync,
     'user_update': _user_update,
+    'avatar_upload': avatar_upload,
     'commission_scheme': _commission_scheme,
     'commission_scheme_delete': _commission_scheme_delete,
     'paid': _paid,

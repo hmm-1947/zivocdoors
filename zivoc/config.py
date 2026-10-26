@@ -45,6 +45,7 @@ STORAGE_DIR = Path(_env('ZIVOC_STORAGE_DIR', str(BASE_DIR / 'storage')))
 SELFIE_DIR = STORAGE_DIR / 'selfies'
 WORKFLOW_DIR = STORAGE_DIR / 'workflow'
 BRAND_DIR = STORAGE_DIR / 'brands'
+AVATAR_DIR = STORAGE_DIR / 'avatars'
 SESSION_DIR = STORAGE_DIR / 'sessions'
 
 SESSION_LIFETIME_SECONDS = int(_env('ZIVOC_SESSION_LIFETIME', str(60 * 60 * 24 * 7)))

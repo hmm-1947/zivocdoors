@@ -146,6 +146,13 @@ def commission_ensure():
     db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('commission_schemes_v1','1')")
 
 
+def avatar_ensure():
+    if not db.one("SHOW COLUMNS FROM users LIKE 'avatar'"):
+        db.q('ALTER TABLE users ADD COLUMN avatar VARCHAR(80) NULL')
+    if not db.one("SHOW COLUMNS FROM users LIKE 'avatar_src'"):
+        db.q('ALTER TABLE users ADD COLUMN avatar_src VARCHAR(255) NULL')
+
+
 def ensure_all():
 
     if _ready['done']:
@@ -161,5 +168,6 @@ def ensure_all():
         lead_ensure()
         team_ensure()
         commission_ensure()
+        avatar_ensure()
 
         _ready['done'] = True
