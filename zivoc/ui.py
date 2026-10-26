@@ -28,9 +28,9 @@ def icon(name):
                   'stroke-linejoin="round" aria-hidden="true"><path d="%s"/></svg>') % path
 
 
-def start_form(action, css=''):
-    return Markup('<form method="post" class="%s"><input type="hidden" name="csrf" value="%s"><input type="hidden" name="action" value="%s">') % (
-        css, csrf_token(), action)
+def start_form(action, css='', multipart=False):
+    return Markup('<form method="post" class="%s"%s><input type="hidden" name="csrf" value="%s"><input type="hidden" name="action" value="%s">') % (
+        css, Markup(' enctype="multipart/form-data"' if multipart else ''), csrf_token(), action)
 
 
 def field(label, name, kind='text', value='', required=True):

@@ -319,7 +319,7 @@ def ctx_survey(u, all_access):
         for index, item in enumerate(items):
             if item['id'] == wanted:
                 start = index
-        brands = [{'id': int(b['id']), 'name': b['name'], 'company': b['company'] or '', 'details': b['details'] or ''} for b in dh_brands(True)]
+        brands = [{'id': int(b['id']), 'name': b['name'], 'company': b['company'] or '', 'details': b['details'] or '', 'image': ('/brand-image?id=%d' % int(b['id'])) if b.get('image') else ''} for b in dh_brands(True)]
         return {'error': None, 'o': o, 'survey_items': items, 'survey_start': start, 'handle_brands': brands}
     except Exception as exc:
         return {'error': str(exc), 'o': None, 'survey_items': [], 'survey_start': 0, 'handle_brands': []}
@@ -589,6 +589,22 @@ def selfie():
     return response
 
 
+def brand_image():
+    u = user()
+    if not u:
+        abort(401)
+    record = db.one('SELECT image FROM door_handle_brands WHERE id=%s', [to_int(request.args.get('id', 0))])
+    if not record or not record['image']:
+        abort(404)
+    path = config.BRAND_DIR / re.split(r'[\\/]', record['image'])[-1]
+    if not path.is_file():
+        abort(404)
+    mime = {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}.get(path.suffix.lstrip('.').lower(), 'application/octet-stream')
+    response = send_file(path, mimetype=mime)
+    response.headers['Content-Disposition'] = 'inline'
+    return response
+
+
 def wf_item_codes(item_ids):
     ids = sorted({to_int(i) for i in item_ids if to_int(i)})
     if not ids:
@@ -842,6 +858,7 @@ def register(app):
     app.add_url_rule('/api.php', 'api_import_php', api_import, methods=['GET', 'POST'])
     app.add_url_rule('/reminders', 'reminders_json', reminders_json)
     app.add_url_rule('/selfie', 'selfie', selfie)
+    app.add_url_rule('/brand-image', 'brand_image', brand_image)
     app.add_url_rule('/workflow-file', 'workflow_file', workflow_file)
     app.add_url_rule('/quotations-export', 'quotations_export', quotations_export)
     app.add_url_rule('/install', 'install', install, methods=['GET', 'POST'])

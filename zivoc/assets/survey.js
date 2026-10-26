@@ -58,11 +58,13 @@ pills.forEach((pill,i)=>pill.addEventListener('click',()=>{if(reachable(i))go(i)
 Object.values(inputs).forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(current<total-1&&done(current))go(current+1);}}));
 function buildBrands(){
  brandList.textContent='';
- if(!brands.length){const p=document.createElement('p');p.className='muted';p.textContent='No door handle brands have been added yet. Ask an admin to add them in the Door handle list.';brandList.appendChild(p);return;}
+ if(!brands.length){const p=document.createElement('p');p.className='muted';p.textContent='No lock brands have been added yet. Ask an admin to add them in the Door handle list.';brandList.appendChild(p);return;}
  const selected=Number(field(current,'brand_id').value)||0;
  brands.forEach(b=>{
   const btn=document.createElement('button');btn.type='button';btn.className='sv-brand-item'+(b.id===selected?' active':'');
+  if(b.image){const im=document.createElement('img');im.src=b.image;im.alt=b.name;im.loading='lazy';btn.appendChild(im);}
   const s=document.createElement('strong');s.textContent=b.name;btn.appendChild(s);
+
   if(b.company){const c=document.createElement('span');c.textContent=b.company;btn.appendChild(c);}
   if(b.details){const d=document.createElement('small');d.textContent=b.details;btn.appendChild(d);}
   btn.addEventListener('click',()=>{field(current,'brand_id').value=String(b.id);pills[current].dataset.brandName=b.name;dialog.close();refresh();});

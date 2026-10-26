@@ -87,6 +87,14 @@ def survey_ensure():
     db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('survey_sides_v1','1')")
 
 
+def brand_image_ensure():
+    if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='brand_image_v1'"):
+        return
+    if not db.one("SHOW COLUMNS FROM door_handle_brands LIKE 'image'"):
+        db.q('ALTER TABLE door_handle_brands ADD COLUMN image VARCHAR(80) NULL')
+    db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('brand_image_v1','1')")
+
+
 def lead_ensure():
     if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='lead_ui_v2'"):
         return
@@ -129,6 +137,7 @@ def ensure_all():
         wf_ensure()
         qt_ensure()
         survey_ensure()
+        brand_image_ensure()
         lead_ensure()
         team_ensure()
 

@@ -94,9 +94,10 @@ def wf_log(oid, u, stage, note):
     db.q('INSERT INTO order_history(order_id,actor_id,stage,note) VALUES (%s,%s,%s,%s)', [oid, u['id'], stage, note])
 
 
-def wf_invalidate(oid):
+def wf_invalidate(oid, quote=True):
     db.q("UPDATE wf_drawings SET status='revision_required' WHERE order_id=%s", [oid])
-    db.q("UPDATE wf_quotations SET status='revised' WHERE order_id=%s", [oid])
+    if quote:
+        db.q("UPDATE wf_quotations SET status='revised' WHERE order_id=%s", [oid])
     db.q("UPDATE orders SET stage='order' WHERE id=%s AND stage<>'production'", [oid])
 
 
@@ -333,7 +334,7 @@ def wf_action(action, u, transaction=True, initial=False):
                      values + [record_id, oid])
             else:
                 db.q(_insert_sql('wf_measurements', columns, ['order_id']), [oid] + values)
-        wf_invalidate(oid)
+        wf_invalidate(oid, False)
         db.q('UPDATE wf_surveys SET status=%s,revision=revision+1,updated_by=%s WHERE order_id=%s', [status, u['id'], oid])
         wf_log(oid, u, 'survey', 'Survey saved: ' + status + '. Previous drawings / quotation require revision.')
     elif action == 'wf_survey_submit':
@@ -363,7 +364,7 @@ def wf_action(action, u, transaction=True, initial=False):
             if brand_id:
                 brand = db.one('SELECT id,name FROM door_handle_brands WHERE id=%s AND active=1', [brand_id])
                 if not brand:
-                    raise AppError('The selected door brand is no longer available.')
+                    raise AppError('The selected lock brand is no longer available.')
             entries.append((item, sides, inner, hinge, brand))
         existing = {}
         for row in db.rows('SELECT id,order_item_id FROM wf_measurements WHERE order_id=%s ORDER BY id', [oid]):
@@ -389,7 +390,7 @@ def wf_action(action, u, transaction=True, initial=False):
                      params + [record_id, oid])
             else:
                 db.q(_insert_sql('wf_measurements', ['order_item_id'] + columns, ['order_id']), [oid, item['id']] + params)
-        wf_invalidate(oid)
+        wf_invalidate(oid, False)
         db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
         wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
         session['quote_created_order'] = oid

@@ -87,15 +87,21 @@ def _order(u):
     db.q("INSERT INTO orders(salesman_id,lead_id,customer,phone,address,source,total,commission_rate,stage) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'order')",
          [sid, lead_id, customer, phone, address, u['role'], total, rate])
     oid = int(db.insert_id())
+    quote_items = {}
     for product_id, qty, price in lines:
         db.q('INSERT INTO order_items(order_id,product_id,quantity,unit_price) VALUES (%s,%s,%s,%s)', [oid, product_id, qty, price])
+        quote_items['item_%s' % db.insert_id()] = {'quantity': qty, 'unit_price': price}
     db.q('INSERT INTO wf_surveys(order_id,updated_by) VALUES (%s,%s)', [oid, u['id']])
-    db.q("INSERT INTO order_history(order_id,actor_id,stage,note) VALUES (%s,%s,'survey','Customer and products saved. Quotation pending.')", [oid, u['id']])
-    if lead:
-        db.q("UPDATE leads SET status='converted' WHERE id=%s", [lead_id])
+    db.q("UPDATE leads SET stage='Quotation',status='converted' WHERE id=%s", [lead_id])
+    data = post()
+    data['order_id'] = oid
+    data['revision'] = 0
+    data['quote_items'] = quote_items
+    wf_action('wf_quote', u, False, True)
+    db.q("INSERT INTO order_history(order_id,actor_id,stage,note) VALUES (%s,%s,'survey','Customer and products saved. Quotation sent. Survey pending.')", [oid, u['id']])
     db.commit()
-    session['flash'] = 'Customer and products saved. Create the quotation draft.'
-    redirect('/?page=order&id=%d#wf-quotation' % oid)
+    session['flash'] = 'Customer and products saved. Quotation sent.'
+    redirect('/?page=quotations')
 
 
 def _stage(u):

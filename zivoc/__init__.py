@@ -21,7 +21,7 @@ def create_app():
     app.jinja_env.finalize = lambda value: '' if value is None else value
     app.jinja_env.trim_blocks = True
     app.jinja_env.lstrip_blocks = True
-    for directory in (config.SESSION_DIR, config.SELFIE_DIR, config.WORKFLOW_DIR):
+    for directory in (config.SESSION_DIR, config.SELFIE_DIR, config.WORKFLOW_DIR, config.BRAND_DIR):
         directory.mkdir(parents=True, exist_ok=True)
     sessions.purge_expired()
     app.teardown_appcontext(db.close_db)
