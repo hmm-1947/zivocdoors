@@ -56,3 +56,31 @@ html.sb-collapsed .sidebar-toggle svg{transform:rotate(180deg)}
 .ol-orderform-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:0 0 14px;padding:13px 16px;text-align:center}.ol-orderform-btn svg{width:18px;height:18px}
 @media(max-width:700px){.ol-orderform-btn{display:flex;width:100%}}
 .avatar{overflow:hidden}.avatar-img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}.avatar-sm{width:40px;height:40px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:10px;background:#eddaeb}.avatar-form{margin-top:4px;margin-bottom:6px}
+@media(max-width:700px){
+.sidebar,html.sb-collapsed .sidebar{display:flex!important;width:272px;max-width:84vw;padding:30px 14px;background:#fff;z-index:60;transform:translateX(-105%);transition:transform .28s ease;box-shadow:none}
+html.nav-open .sidebar{transform:translateX(0);box-shadow:0 0 40px rgba(32,33,39,.28)}
+html.sb-collapsed .sidebar-top{flex-direction:row;gap:8px;margin-bottom:26px}
+html.sb-collapsed .sidebar .brand-logo{width:clamp(88px,11vw,112px);height:auto;object-fit:contain}
+html.sb-collapsed .sidebar>.eyebrow{display:block}
+html.sb-collapsed .nav-label{display:inline}
+html.sb-collapsed .sidebar nav a{justify-content:flex-start;padding-left:15px;padding-right:15px}
+.sidebar-toggle{display:none}
+.nav-backdrop{position:fixed;inset:0;background:rgba(32,33,39,.4);opacity:0;pointer-events:none;transition:opacity .28s ease;z-index:55}
+html.nav-open .nav-backdrop{opacity:1;pointer-events:auto}
+html.nav-open{overflow:hidden}
+}
+@media(min-width:701px){.nav-backdrop{display:none}}
+@media(max-width:700px){
+.bottom-nav{display:none!important}
+main{padding:17px 14px calc(24px + env(safe-area-inset-bottom))}
+input,select,textarea{font-size:16px}
+button,.button,.sidebar nav a{min-height:44px}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+.card{padding:18px;border-radius:18px}
+.wf-line-head{flex-direction:column;align-items:stretch;gap:10px}
+.wf-line-actions{justify-content:flex-start}
+.wf-line-actions .button{flex:1 1 auto;text-align:center}
+.wf-fields,.form-grid{grid-template-columns:1fr!important}
+.page-heading{flex-direction:column;align-items:flex-start;gap:10px}
+.sv-tools{justify-content:space-between;flex-wrap:wrap}
+}

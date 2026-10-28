@@ -37,3 +37,12 @@
 .sv-inner{top:37%;width:84px;padding:3px 4px}.sv-inner input{height:40px;font-size:15px}
 @media(max-width:700px){.sv-inner{top:37%;width:64px}.sv-inner input{height:38px;font-size:14px}}
 .ol-survey-m{display:none!important}@media(max-width:700px){.ol-survey-m{display:inline-flex!important}}
+.sv-tools{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:8px 0}
+.sv-toggle{display:inline-flex;border:1px solid #c9ccd6;border-radius:8px;overflow:hidden}
+.sv-toggle button{border:0;border-radius:0;background:#fff;color:#202127;padding:6px 14px;font-size:13px;cursor:pointer;min-height:0}
+.sv-toggle button.active{background:#5b4fc7;color:#fff}
+.sv-door[data-frame="0"] .sv-frame,.sv-door[data-frame="0"] .sv-dash{display:none}
+.sv-door[data-frame="0"] .sv-in1{stroke:#202127;stroke-width:1.5}
+.os-door.os-noframe .os-frame,.os-door.os-noframe .os-dash{display:none}
+.os-door.os-noframe .os-in1{stroke:#202127;stroke-width:1.5}
+.wf-line-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}

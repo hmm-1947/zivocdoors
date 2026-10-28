@@ -130,3 +130,13 @@ def cm_unit(value):
     except (TypeError, ValueError):
         return '' if value is None else value
     return '%g cm' % round(number / 10, 3)
+
+
+def dim_unit(value, unit='cm'):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return '' if value is None else value
+    if unit == 'in':
+        return '%g in' % round(number / 25.4, 2)
+    return '%g cm' % round(number / 10, 3)

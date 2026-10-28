@@ -16,8 +16,11 @@ const dialog=q('[data-sv-dialog]'),brandList=q('[data-sv-brand-list]'),brandLabe
 let brands=[];try{brands=JSON.parse(root.dataset.brands||'[]');}catch(e){brands=[];}
 const defaultHint=hintEl.textContent;
 let current=Math.min(Math.max(Number(root.dataset.start)||0,0),total-1);
-const toCm=v=>{const t=String(v).trim(),n=Number(t);return t!==''&&Number.isFinite(n)?String(Number((n/10).toFixed(3))):v;};
-const toMm=v=>{const t=String(v).trim(),n=Number(t);return t!==''&&Number.isFinite(n)?String(Number((n*10).toFixed(2))):v;};
+const unitOf=i=>field(i,'unit').value==='in'?'in':'cm';
+const factor=i=>unitOf(i)==='in'?25.4:10;
+const toCm=(v,i)=>{const t=String(v).trim(),n=Number(t);return t!==''&&Number.isFinite(n)?String(Number((n/factor(i)).toFixed(3))):v;};
+const toMm=(v,i)=>{const t=String(v).trim(),n=Number(t);return t!==''&&Number.isFinite(n)?String(Number((n*factor(i)).toFixed(2))):v;};
+const unitLabels=[...root.querySelectorAll('[data-sv-unit]')],unitBtns=[...root.querySelectorAll('[data-sv-unit-btn]')],frameBtns=[...root.querySelectorAll('[data-sv-frame]')];
 const validNum=text=>{const n=Number(text);return String(text).trim()!==''&&Number.isFinite(n)&&n>=0.1&&n<=20000;};
 const done=i=>sideKeys.every(k=>validNum(field(i,k).value))&&field(i,'inner').value.trim()!==''&&['Left','Right'].includes(field(i,'hinge').value);
 const allDone=()=>pills.every((_,i)=>done(i));
@@ -37,6 +40,11 @@ function refresh(){
  statusEl.classList.toggle('sv-ok',ok);
  pills.forEach((pill,i)=>{pill.classList.toggle('active',i===current);pill.classList.toggle('done',done(i));pill.disabled=!reachable(i);});
  svg.dataset.hinge=field(current,'hinge').value;
+ const fm=field(current,'frame').value==='noframe'?'noframe':'frame',un=unitOf(current);
+ svg.dataset.frame=fm==='noframe'?'0':'1';
+ frameBtns.forEach(b=>b.classList.toggle('active',b.dataset.svFrame===fm));
+ unitBtns.forEach(b=>b.classList.toggle('active',b.dataset.svUnitBtn===un));
+ unitLabels.forEach(s=>{s.textContent=un;});
  if(last&&!allDone())hintEl.textContent='Every item needs the top, bottom, left, right and inner measurements and a hinge position before you can submit.';
  else hintEl.textContent=defaultHint;
  refreshBrand();
@@ -46,14 +54,16 @@ function render(){
  countEl.textContent='ITEM '+(current+1)+' OF '+total;
  nameEl.textContent=pill.dataset.name;
  qtyEl.textContent='Quantity '+pill.dataset.qty+(Number(pill.dataset.qty)>1?' · these measurements apply to every door of this item.':'');
- Object.keys(inputs).forEach(k=>{inputs[k].value=toCm(field(current,k).value);});
+ Object.keys(inputs).forEach(k=>{inputs[k].value=toCm(field(current,k).value,current);});
  radios.forEach(r=>{r.checked=r.value===field(current,'hinge').value;});
  showError('');
  refresh();
 }
 function go(index){current=index;render();inputs.top.focus({preventScroll:true});window.scrollTo({top:root.getBoundingClientRect().top+window.scrollY-20,behavior:'smooth'});}
-Object.keys(inputs).forEach(k=>inputs[k].addEventListener('input',()=>{field(current,k).value=toMm(inputs[k].value);showError('');refresh();}));
+Object.keys(inputs).forEach(k=>inputs[k].addEventListener('input',()=>{field(current,k).value=toMm(inputs[k].value,current);showError('');refresh();}));
 radios.forEach(r=>r.addEventListener('change',()=>{if(r.checked){field(current,'hinge').value=r.value;showError('');refresh();}}));
+frameBtns.forEach(b=>b.addEventListener('click',()=>{field(current,'frame').value=b.dataset.svFrame;refresh();}));
+unitBtns.forEach(b=>b.addEventListener('click',()=>{field(current,'unit').value=b.dataset.svUnitBtn;render();}));
 backBtn.addEventListener('click',()=>{if(current>0)go(current-1);});
 nextBtn.addEventListener('click',()=>{if(!done(current)){showError('Enter the top, bottom, left, right and inner measurements and the hinge position to continue.');return;}if(current<total-1)go(current+1);});
 pills.forEach((pill,i)=>pill.addEventListener('click',()=>{if(reachable(i))go(i);}));

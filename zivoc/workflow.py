@@ -365,12 +365,14 @@ def wf_action(action, u, transaction=True, initial=False):
                 brand = db.one('SELECT id,name FROM door_handle_brands WHERE id=%s AND active=1', [brand_id])
                 if not brand:
                     raise AppError('The selected lock brand is no longer available.')
-            entries.append((item, sides, inner, hinge, brand))
+            frame_mode = 'noframe' if wf_text(row.get('frame', ''), 10) == 'noframe' else 'frame'
+            display_unit = 'in' if wf_text(row.get('unit', ''), 5) == 'in' else 'cm'
+            entries.append((item, sides, inner, hinge, brand, frame_mode, display_unit))
         existing = {}
         for row in db.rows('SELECT id,order_item_id FROM wf_measurements WHERE order_id=%s ORDER BY id', [oid]):
             existing.setdefault(int(row['order_item_id']), int(row['id']))
         db.q('UPDATE wf_measurements SET active=0 WHERE order_id=%s', [oid])
-        for item, sides, inner, hinge, brand in entries:
+        for item, sides, inner, hinge, brand, frame_mode, display_unit in entries:
             length = sides['top']
             height = sides['left']
             values = {
@@ -381,6 +383,7 @@ def wf_action(action, u, transaction=True, initial=False):
                 'side_left': '%g' % sides['left'], 'side_right': '%g' % sides['right'],
                 'inner_detail': inner,
                 'handle_brand_id': int(brand['id']) if brand else None, 'handle_brand': brand['name'] if brand else None,
+                'frame_mode': frame_mode, 'display_unit': display_unit,
             }
             columns = list(values.keys())
             params = [values[key] for key in columns]
@@ -390,10 +393,14 @@ def wf_action(action, u, transaction=True, initial=False):
                      params + [record_id, oid])
             else:
                 db.q(_insert_sql('wf_measurements', ['order_item_id'] + columns, ['order_id']), [oid, item['id']] + params)
-        wf_invalidate(oid, False)
+        redo = int(survey['revision']) > 0 and db.one('SELECT id FROM wf_quotations WHERE order_id=%s', [oid]) is not None
+        wf_invalidate(oid, redo)
         db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
         wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
-        session['quote_created_order'] = oid
+        if redo:
+            session['quote_to_list'] = 1
+        else:
+            session['quote_created_order'] = oid
     elif action == 'wf_survey_review':
 
         status = required('status')

@@ -153,6 +153,18 @@ def avatar_ensure():
         db.q('ALTER TABLE users ADD COLUMN avatar_src VARCHAR(255) NULL')
 
 
+def survey_view_ensure():
+    if not db.one("SHOW COLUMNS FROM wf_measurements LIKE 'frame_mode'"):
+        db.q("ALTER TABLE wf_measurements ADD COLUMN frame_mode VARCHAR(10) NOT NULL DEFAULT 'frame'")
+    if not db.one("SHOW COLUMNS FROM wf_measurements LIKE 'display_unit'"):
+        db.q("ALTER TABLE wf_measurements ADD COLUMN display_unit VARCHAR(5) NOT NULL DEFAULT 'cm'")
+
+
+def deletion_ensure():
+    from .deletion import ensure_log_table
+    ensure_log_table()
+
+
 def ensure_all():
 
     if _ready['done']:
@@ -169,5 +181,7 @@ def ensure_all():
         team_ensure()
         commission_ensure()
         avatar_ensure()
+        survey_view_ensure()
+        deletion_ensure()
 
         _ready['done'] = True

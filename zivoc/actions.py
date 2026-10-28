@@ -1,18 +1,19 @@
 import re
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import current_app, request, session
 
 from . import catalog as erp
 from . import config, db
-from .core import AppError, Redirect, files, filter_int, hash_equals, hash_password, is_numeric, now, php_round, post, random_hex, today, utf8_len, verify_password
+from .core import AppError, Redirect, tz, files, filter_int, hash_equals, hash_password, is_numeric, now, php_round, post, random_hex, today, utf8_len, verify_password
 from .helpers import csrf_token, next_stage, owner, positive, privileged, redirect, require_admin, required, salesman, to_int, user, val, reset_user_cache
 from .hr import hr_action, hr_lock
 from .leads import lead_create, lead_update
 from .avatars import avatar_upload
 from .team import sync_team
 
+from .deletion import deletion_action
 from .doorhandles import dh_action
 from .quotations import qt_action
 from .uploads import image_info, read_upload
@@ -21,7 +22,7 @@ from .workflow import wf_action, wf_production_gate, wf_survey
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 SAVE_FORM_ACTIONS = ('wf_survey', 'wf_quote', 'qt_create', 'lead', 'lead_update')
 PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'calendar',
-         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes')
+         'salary', 'checkout', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes', 'deletion_logs')
 MONTH_RE = re.compile(r'^20[0-9]{2}-(0[1-9]|1[0-2])$')
 
 
@@ -57,6 +58,18 @@ def _lead_status(u):
     db.q('UPDATE leads SET status=%s WHERE id=%s', [status, record['id']])
 
 
+def _survey_schedule():
+    day = required('survey_date', 10)
+    clock = required('survey_time', 5)
+    try:
+        moment = datetime.strptime(day + ' ' + clock, '%Y-%m-%d %H:%M').replace(tzinfo=tz())
+    except ValueError:
+        raise AppError('Enter a valid survey date and time.')
+    if moment < now() + timedelta(minutes=5):
+        raise AppError('Survey must be scheduled for today or a future date, at least 5 minutes from now.')
+    return moment.replace(tzinfo=None)
+
+
 def _order(u):
     if u['role'] == 'finance':
         raise AppError('Sales or admin access required to create orders.')
@@ -80,6 +93,7 @@ def _order(u):
     customer = lead['name'] if lead else required('customer', 150)
     phone = lead['phone'] if lead else required('phone', 30)
     address = lead['address'] if lead else required('address', 3000)
+    survey_at = _survey_schedule()
     lines = [(erp.local_product(item), qty, float(item['price'])) for item, qty in checked]
     rate = db.one('SELECT commission_rate FROM users WHERE id=%s', [sid])['commission_rate']
     db.begin()
@@ -94,6 +108,8 @@ def _order(u):
         db.q('INSERT INTO order_items(order_id,product_id,quantity,unit_price) VALUES (%s,%s,%s,%s)', [oid, product_id, qty, price])
         quote_items['item_%s' % db.insert_id()] = {'quantity': qty, 'unit_price': price}
     db.q('INSERT INTO wf_surveys(order_id,updated_by) VALUES (%s,%s)', [oid, u['id']])
+    db.q('INSERT INTO reminders(salesman_id,order_id,lead_id,title,due_at) VALUES (%s,%s,%s,%s,%s)',
+         [sid, oid, lead_id, ('Door survey \u2013 ' + customer)[:200], survey_at.strftime('%Y-%m-%d %H:%M:%S')])
     db.q("UPDATE leads SET stage='Quotation',status='converted' WHERE id=%s", [lead_id])
     data = post()
     data['order_id'] = oid
@@ -311,7 +327,7 @@ def _dispatch(action, u):
         raise AppError('Please sign in.')
     if u['role'] == 'freelancer' and action in ('attendance', 'leave_request', 'workdays'):
         raise AppError('Attendance is not available for freelancers.')
-    if qt_action(action, u) or dh_action(action, u) or wf_action(action, u) or hr_action(action, u):
+    if deletion_action(action, u) or qt_action(action, u) or dh_action(action, u) or wf_action(action, u) or hr_action(action, u):
         session['flash'] = 'Saved successfully.'
         return
     if action == 'logout':

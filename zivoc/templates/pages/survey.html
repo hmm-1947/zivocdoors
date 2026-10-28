@@ -2,24 +2,25 @@
 {% if error %}<p class="notice error">{{ error }}</p>{% else %}
 <div class="page-heading"><div><span class="eyebrow">ORDER #{{ '%04d' % o['id'] }} · SURVEY</span><h1>Door survey</h1><p class="muted">{{ o['customer'] }} · enter the four side measurements, the inner measurement and the hinge position for each item.</p></div></div>
 {{ start_form('wf_survey_submit', 'sv-form') }}<input type="hidden" name="order_id" value="{{ o['id'] }}">
-{% for it in survey_items %}{% set ix = loop.index0 %}{% for fld in ('top', 'bottom', 'left', 'right', 'inner', 'hinge') %}<input type="hidden" name="survey[{{ it['id'] }}][{{ fld }}]" value="{{ it[fld] }}" data-sv-field="{{ fld }}" data-index="{{ ix }}">{% endfor %}<input type="hidden" name="survey[{{ it['id'] }}][brand_id]" value="{{ it['brand_id'] }}" data-sv-field="brand_id" data-index="{{ ix }}">{% endfor %}
+{% for it in survey_items %}{% set ix = loop.index0 %}{% for fld in ('top', 'bottom', 'left', 'right', 'inner', 'hinge', 'frame', 'unit') %}<input type="hidden" name="survey[{{ it['id'] }}][{{ fld }}]" value="{{ it[fld] }}" data-sv-field="{{ fld }}" data-index="{{ ix }}">{% endfor %}<input type="hidden" name="survey[{{ it['id'] }}][brand_id]" value="{{ it['brand_id'] }}" data-sv-field="brand_id" data-index="{{ ix }}">{% endfor %}
 <section class="card sv-card" data-sv data-start="{{ survey_start }}" data-brands="{{ handle_brands|tojson|forceescape }}">
 <div class="sv-progress">{% for it in survey_items %}<button type="button" class="sv-pill" data-sv-pill="{{ loop.index0 }}" data-name="{{ it['name'] }}" data-qty="{{ it['quantity'] }}" data-brand-name="{{ it['brand'] }}"><span class="sv-pill-no">{{ loop.index }}</span><span class="sv-pill-name">{{ it['name'] }}</span></button>{% endfor %}</div>
 <div class="sv-head"><div><span class="eyebrow" data-sv-count></span><h2 data-sv-name></h2><p class="muted" data-sv-qty></p></div><span class="badge" data-sv-status></span></div>
+<div class="sv-tools"><div class="sv-toggle" role="group" aria-label="Frame"><button type="button" data-sv-frame="frame">Frame</button><button type="button" data-sv-frame="noframe">No Frame</button></div><div class="sv-toggle" role="group" aria-label="Unit"><button type="button" data-sv-unit-btn="cm">CM</button><button type="button" data-sv-unit-btn="in">Inches</button></div></div>
 <div class="sv-stage"><div class="sv-figure">
-<label class="sv-side sv-top">Top (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="top"></label>
-<label class="sv-side sv-bottom">Bottom (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="bottom"></label>
-<label class="sv-side sv-left">Left (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="left"></label>
-<label class="sv-side sv-right">Right (cm)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="right"></label>
+<label class="sv-side sv-top">Top (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="top"></label>
+<label class="sv-side sv-bottom">Bottom (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="bottom"></label>
+<label class="sv-side sv-left">Left (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="left"></label>
+<label class="sv-side sv-right">Right (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="right"></label>
 <label class="sv-side sv-inner">Inner<input type="text" autocomplete="off" maxlength="80" placeholder="Inner size" data-sv-input="inner"></label>
 <svg class="sv-door" viewBox="0 30 300 430" role="img" aria-label="Door frame technical drawing" data-hinge="">
 <defs><pattern id="sv-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a90a0" stroke-width="1"/></pattern></defs>
-<path d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#sv-hatch)" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
-<rect x="30" y="50" width="240" height="400" fill="#f7f6fb"/>
+<path class="sv-frame" d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#sv-hatch)" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>
+<rect class="sv-in1" x="30" y="50" width="240" height="400" fill="#f7f6fb"/>
 <rect x="34" y="54" width="232" height="392" fill="#ffffff" stroke="#202127" stroke-width="1.5"/>
 <path d="M4 450 H296" stroke="#202127" stroke-width="2.4"/>
-<g class="h-l"><path d="M34 255 L266 54 M34 255 L266 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/></g>
-<g class="h-r"><path d="M266 255 L34 54 M266 255 L34 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/></g>
+<g class="h-l sv-dash"><path d="M34 255 L266 54 M34 255 L266 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/></g>
+<g class="h-r sv-dash"><path d="M266 255 L34 54 M266 255 L34 446" stroke="#7c6fd6" stroke-width="1" stroke-dasharray="6 5" fill="none"/></g>
 <g class="h-l">{% for cy in (110, 255, 400) %}<g transform="translate(32 {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/><circle cx="0" cy="-11" r="1.6" fill="#202127"/><circle cx="0" cy="11" r="1.6" fill="#202127"/></g>{% endfor %}</g>
 <g class="h-r">{% for cy in (110, 255, 400) %}<g transform="translate(268 {{ cy }})"><rect x="-8" y="-16" width="16" height="32" rx="2" fill="#d5d9e2" stroke="#202127" stroke-width="1.2"/><line x1="-8" y1="-5" x2="8" y2="-5" stroke="#202127" stroke-width="1"/><line x1="-8" y1="5" x2="8" y2="5" stroke="#202127" stroke-width="1"/><circle cx="0" cy="-11" r="1.6" fill="#202127"/><circle cx="0" cy="11" r="1.6" fill="#202127"/></g>{% endfor %}</g>
 <g class="h-l"><rect x="233" y="228" width="18" height="60" rx="9" fill="#e5e7eb" stroke="#202127" stroke-width="1.2"/><rect x="206" y="252" width="40" height="11" rx="5.5" fill="#cfd3dc" stroke="#202127" stroke-width="1.2"/><circle cx="242" cy="257" r="4" fill="#202127"/></g>

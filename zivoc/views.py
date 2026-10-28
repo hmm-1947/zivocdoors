@@ -11,9 +11,10 @@ from flask import Response, abort, current_app, jsonify, render_template, reques
 from . import actions, catalog as erp, config, db, schema
 from .core import (AppError, Redirect, add_days, add_months, fnum, hash_equals, hash_password, is_numeric, money, now, php_date, php_round, post,
                    random_hex, today, to_dt, verify_password)
+from .deletion import log_listing
 from .doorhandles import dh_brands
 from .drawing import wf_drawing_svg
-from .helpers import STAGES, cm_text, cm_unit, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
+from .helpers import STAGES, cm_text, cm_unit, dim_unit, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
 from .hr import hr_advance_total, hr_attendance, hr_employee, hr_month, hr_workdays
 from .leads import lead_form_values, lead_listing, party_people
 from .avatars import refresh as avatar_refresh
@@ -24,7 +25,7 @@ from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf
                        wf_ready, wf_survey)
 
 ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'checkout',
-                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes')
+                 'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes', 'deletion_logs')
 NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'),
        ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Commissions'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
@@ -315,6 +316,7 @@ def ctx_survey(u, all_access):
                 'hinge': m['direction'] if m else '',
                 'brand_id': int(m['handle_brand_id']) if m and m.get('handle_brand_id') else '',
                 'brand': (m.get('handle_brand') or '') if m else '',
+                'frame': (m.get('frame_mode') or 'frame') if m else 'frame', 'unit': (m.get('display_unit') or 'cm') if m else 'cm',
             })
         start = 0
         wanted = to_int(request.args.get('item', 0))
@@ -356,7 +358,7 @@ def ctx_checkout(u, all_access):
         if request.args.get('lead_id'):
             lead = owner('leads', to_int(request.args.get('lead_id')), u)
         out.update({
-            'selected': list(selected.values()), 'lead': lead,
+            'selected': list(selected.values()), 'lead': lead, 'today': today(),
             'leads': db.rows('SELECT * FROM leads WHERE ' + ('1=1' if all_access else 'salesman_id=%d' % int(u['id'])) + ' ORDER BY name'),
         })
     except Exception as exc:
@@ -410,7 +412,7 @@ def ctx_quotations(u):
     for row in listing:
         row['details'] = json_obj(row.get('customer_details'))
         row['effective'] = wf_quote_status(row)
-        row['display_status'] = 'Converted' if row['stage'] == 'production' else (row.get('lead_stage') or 'Quotation')
+        row['display_status'] = 'Converted' if row['stage'] == 'production' else ('Revised' if row['effective'] == 'revised' else (row.get('lead_stage') or 'Quotation'))
     keep = {key: request.args[key] for key in ('from', 'to', 'customer', 'stage', 'status', 'search', 'customer_type') if request.args.get(key)}
     limit = request.args.get('limit', '100')
     if limit not in ('100', '250', '500', '1000', 'All'):
@@ -532,6 +534,8 @@ def build_context(u, page):
         ctx.update(ctx_quotations(u))
     elif page == 'quote_templates':
         ctx.update(ctx_quote_templates(u))
+    elif page == 'deletion_logs':
+        ctx.update(log_listing(request.args))
     elif page == 'door_handles':
         ctx.update({'brands': dh_brands() if u['role'] == 'admin' else []})
     elif page in ('attendance', 'salary', 'calendar'):
@@ -556,7 +560,7 @@ def index():
         u = user()
     if page not in ALLOWED_PAGES:
         page = 'home'
-    if page in ('team', 'commission_schemes') and (not u or u['role'] != 'admin'):
+    if page in ('team', 'commission_schemes', 'deletion_logs') and (not u or u['role'] != 'admin'):
         page = 'home'
     notices = []
     for key in ('flash', 'error'):
@@ -695,6 +699,10 @@ def workflow_file():
                 lines = db.rows('SELECT * FROM wf_quotation_items WHERE quotation_id=%s ORDER BY id', [quote['id']])
             for line in lines:
                 line['m'] = json_obj(line.get('snapshot'))
+                if not historical and line.get('measurement_id'):
+                    live = db.one('SELECT frame_mode,display_unit FROM wf_measurements WHERE id=%s', [line['measurement_id']])
+                    if live:
+                        line['m'].update(live)
             company = json_obj(quote['company_snapshot'])
             order_form = 'order_form' in request.args
             seller = db.one('SELECT name FROM users WHERE id=%s', [order['salesman_id']])
@@ -873,7 +881,7 @@ def pos_sync():
 def register(app):
     from . import ui
     ui.register(app)
-    app.jinja_env.filters.update(cm=cm_text, cmu=cm_unit)
+    app.jinja_env.filters.update(cm=cm_text, cmu=cm_unit, dimu=dim_unit)
     app.jinja_env.globals.update(
         wf_label=wf_label, wf_quote_number=wf_quote_number, wf_quote_status=wf_quote_status, wf_can_edit=wf_can_edit, wf_latest_drawing=wf_latest_drawing,
         positive_value=positive_value, privileged=privileged, WF_MEASURES=WF_MEASURES, STAGES=STAGES, csrf_token=csrf_token, to_int=to_int,
