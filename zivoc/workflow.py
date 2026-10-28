@@ -397,10 +397,7 @@ def wf_action(action, u, transaction=True, initial=False):
         wf_invalidate(oid, redo)
         db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
         wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
-        if redo:
-            session['quote_to_list'] = 1
-        else:
-            session['quote_created_order'] = oid
+        session['quote_to_list'] = 1
     elif action == 'wf_survey_review':
 
         status = required('status')

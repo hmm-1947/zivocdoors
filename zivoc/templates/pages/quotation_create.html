@@ -7,7 +7,7 @@
 <label class="zf-c2">Quotation Date :<input type="date" name="quote_date" value="{{ old.get('quote_date', today) }}" required></label>
 {% set party_name_field = 'customer' %}
 {% set addr_req = true %}
-{% include 'pages/_party.html' %}
+{% set hide_franchise = true %}{% include 'pages/_party.html' %}
 {% if all_access %}<div class="zf-c3">{{ assignment(u) }}</div>{% endif %}
 <label class="zf-c5">End Customer :<textarea name="end_customer" placeholder="Enter End Customer">{{ old.get('end_customer', '') }}</textarea></label>
 <label class="zf-c4">Quotation Remark :<textarea name="remark" placeholder="Enter Quotation Remark">{{ old.get('remark', '') }}</textarea></label>

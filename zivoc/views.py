@@ -29,7 +29,7 @@ ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 
 NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'),
        ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Commissions'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
-BOTTOM_NAV = (('home', 'Home'), ('leads', 'Leads'), ('orders', 'Orders'), ('products', 'Products'), ('profile', 'Profile'))
+BOTTOM_NAV = (('home', 'Home'), ('orders', 'Orders'), ('leads', 'Leads'), ('profile', 'Profile'))
 
 
 def scope(all_access, u, column='salesman_id'):

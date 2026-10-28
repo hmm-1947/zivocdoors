@@ -115,6 +115,7 @@ document.addEventListener('submit', event => {
   const back=document.createElement('div');back.className='nav-backdrop';document.body.appendChild(back);
   const setOpen=v=>root.classList.toggle('nav-open',v);
   back.addEventListener('click',()=>setOpen(false));
+  const menuBtn=document.getElementById('menu-btn');if(menuBtn)menuBtn.addEventListener('click',()=>setOpen(!root.classList.contains('nav-open')));
   document.querySelectorAll('.sidebar nav a').forEach(a=>a.addEventListener('click',()=>setOpen(false)));
   window.addEventListener('resize',()=>{if(!mobile())setOpen(false);});
   let sx=0,sy=0,ok=false;
