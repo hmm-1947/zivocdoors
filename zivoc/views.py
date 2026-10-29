@@ -905,6 +905,27 @@ def pos_sync():
     return Response(json.dumps(body, indent=4, default=str), status, mimetype='application/json')
 
 
+def pwa_manifest():
+    data = {
+        'name': 'Zivoc', 'short_name': 'Zivoc', 'description': 'Zivoc sales workspace', 'id': '/', 'start_url': '/', 'scope': '/',
+        'display': 'standalone', 'orientation': 'portrait', 'background_color': '#f0edfc', 'theme_color': '#f0edfc',
+        'icons': [
+            {'src': '/assets/pwa-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+            {'src': '/assets/pwa-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
+            {'src': '/assets/pwa-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'maskable'},
+            {'src': '/assets/pwa-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+        ],
+    }
+    return Response(json.dumps(data), mimetype='application/manifest+json')
+
+
+def pwa_sw():
+    response = send_file(config.BASE_DIR / 'zivoc' / 'assets' / 'sw.js', mimetype='application/javascript', max_age=0)
+    response.headers['Service-Worker-Allowed'] = '/'
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
+
+
 def register(app):
     from . import ui
     ui.register(app)
@@ -927,6 +948,8 @@ def register(app):
     app.add_url_rule('/quotations-export', 'quotations_export', quotations_export)
     app.add_url_rule('/install', 'install', install, methods=['GET', 'POST'])
     app.add_url_rule('/pos-sync', 'pos_sync', pos_sync, methods=['GET', 'POST'])
+    app.add_url_rule('/manifest.webmanifest', 'pwa_manifest', pwa_manifest)
+    app.add_url_rule('/sw.js', 'pwa_sw', pwa_sw)
 
 
 def asset_version(name):
