@@ -25,6 +25,7 @@ ICON_PATHS = {
     'calendar': 'M3 6h18v15H3ZM3 10h18M8 3v5M16 3v5',
     'file': 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8ZM14 3v5h5M9 13h6M9 17h4',
     'cart': 'M3 4h2l2.4 11h10.2L20 7H6M9 20h.01M17 20h.01',
+    'survey': 'M9 4h6v3H9ZM7 5H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-1M9 12h6M9 16h4',
     'wallet': 'M3 5h17v16H3ZM3 5V3h14M15 11h6v5h-6Z',
 }
 
@@ -72,6 +73,15 @@ def empty_state(text):
     return Markup('<div class="empty">%s<p>%s</p></div>') % (icon('orders'), text)
 
 
+def task_icon(title):
+    text = str(title or '').lower()
+    if text.startswith('door survey'):
+        return 'survey'
+    if text.startswith('quotation'):
+        return 'file'
+    return 'phone'
+
+
 def tasks(items):
     if not items:
         return empty_state('You\u2019re all caught up. Add a follow-up to stay on track.')
@@ -81,7 +91,7 @@ def tasks(items):
         out.append(
             Markup('<article class="task"><span class="task-mark">%s</span><div><strong>%s</strong><small>%s \u00b7 %s</small>%s</div>%s'
                    '<input type="hidden" name="id" value="%d"><button class="icon-button" aria-label="Complete reminder">%s</button></form></article>') % (
-                icon('phone'), task['title'], php_date('d M, h:i a', task['due_at']), task['name'], link, start_form('done'), int(task['id']), icon('check')))
+                icon(task_icon(task['title'])), task['title'], php_date('d M, h:i a', task['due_at']), task['name'], link, start_form('done'), int(task['id']), icon('check')))
     return Markup('').join(out)
 
 
