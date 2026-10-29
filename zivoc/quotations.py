@@ -1,10 +1,12 @@
 import json
+from datetime import datetime, timedelta
+
 
 from flask import session
 
 from . import catalog as erp
 from . import db
-from .core import AppError
+from .core import AppError, now, tz
 from .helpers import owner, privileged, require_admin, required, salesman, val
 from .core import post
 from .erpleads import push_lead
@@ -35,6 +37,18 @@ def qt_failed_form(action, oid=0):
     if saved.get('action') == action and (not oid or int(saved.get('order_id') or 0) == oid):
         return saved
     return {}
+
+
+def qt_survey_schedule():
+    day = required('survey_date', 10)
+    clock = required('survey_time', 5)
+    try:
+        moment = datetime.strptime(day + ' ' + clock, '%Y-%m-%d %H:%M').replace(tzinfo=tz())
+    except ValueError:
+        raise AppError('Enter a valid survey date and time.')
+    if moment < now() + timedelta(minutes=5):
+        raise AppError('Survey must be scheduled for today or a future date, at least 5 minutes from now.')
+    return moment.replace(tzinfo=None)
 
 
 def qt_template_id(value):
@@ -146,6 +160,7 @@ def qt_action(action, u):
         total += quantity * price
     if total > 999999999:
         raise AppError('Quotation subtotal exceeds limit.')
+    survey_at = qt_survey_schedule()
     db.begin()
     if not lead:
         lead_id = insert_lead(sid, {
@@ -168,6 +183,8 @@ def qt_action(action, u):
     data['revision'] = 0
     data['quote_items'] = quote_items
     wf_action('wf_quote', u, False, True)
+    db.q('INSERT INTO reminders(salesman_id,order_id,lead_id,title,due_at) VALUES (%s,%s,%s,%s,%s)',
+         [sid, oid, lead_id, ('Door survey \u2013 ' + name)[:200], survey_at.strftime('%Y-%m-%d %H:%M:%S')])
     contact = val('contact_date', 10)
     if contact != '':
         db.q('INSERT INTO reminders(salesman_id,order_id,lead_id,title,due_at) VALUES (%s,%s,%s,%s,%s)',

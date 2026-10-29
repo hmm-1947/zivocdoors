@@ -499,13 +499,38 @@ def ctx_hr(u, page):
     return out
 
 
+def reminders_unread(u):
+    seen = db.one('SELECT reminders_seen_at FROM users WHERE id=%s', [u['id']])
+    seen = str(seen['reminders_seen_at']) if seen and seen['reminders_seen_at'] else ''
+    stamp = now().strftime('%Y-%m-%d %H:%M:%S')
+    rows = db.rows('SELECT created_at,due_at FROM reminders WHERE done=0 AND ' + ('1=1' if privileged(u) else 'salesman_id=%d' % int(u['id'])))
+    count = 0
+    for row in rows:
+        created = str(row['created_at'])
+        due = str(row['due_at'])
+        if created > seen or (due <= stamp and due > seen):
+            count += 1
+    return count
+
+
+def reminders_unread_json():
+    u = user()
+    if not u:
+        return Response('{"count":0}', 401, mimetype='application/json')
+    return Response(json.dumps({'count': reminders_unread(u)}), mimetype='application/json')
+
+
 def build_context(u, page):
     all_access = privileged(u)
     reminders = db.rows('SELECT r.*,u.name FROM reminders r JOIN users u ON u.id=r.salesman_id WHERE r.done=0 AND ' +
                         ('1=1' if all_access else 'r.salesman_id=%d' % int(u['id'])) + ' ORDER BY r.due_at LIMIT 100')
     stamp = now().strftime('%Y-%m-%d %H:%M:%S')
     due = len([r for r in reminders if str(r['due_at']) <= stamp])
-    ctx = {'u': u, 'page': page, 'all_access': all_access, 'reminders': reminders, 'due': due}
+    unread = reminders_unread(u)
+    if page == 'reminders':
+        db.q('UPDATE users SET reminders_seen_at=%s WHERE id=%s', [stamp, u['id']])
+        unread = 0
+    ctx = {'u': u, 'page': page, 'all_access': all_access, 'reminders': reminders, 'due': due, 'unread': unread}
     if page == 'home':
         ctx.update(ctx_home(u, all_access, reminders))
     elif page == 'leads':
@@ -894,6 +919,7 @@ def register(app):
     app.add_url_rule('/api', 'api_import', api_import, methods=['GET', 'POST'])
     app.add_url_rule('/api.php', 'api_import_php', api_import, methods=['GET', 'POST'])
     app.add_url_rule('/reminders', 'reminders_json', reminders_json)
+    app.add_url_rule('/reminders-unread', 'reminders_unread_json', reminders_unread_json)
     app.add_url_rule('/selfie', 'selfie', selfie)
     app.add_url_rule('/brand-image', 'brand_image', brand_image)
     app.add_url_rule('/avatar', 'avatar', avatar)

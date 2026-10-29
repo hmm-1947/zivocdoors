@@ -125,3 +125,30 @@ document.addEventListener('submit', event => {
 })();
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-coming-soon]');if(b){e.preventDefault();alert('Coming Soon');}});
 
+
+(()=>{
+document.addEventListener('click',e=>{
+ const btn=e.target.closest('[data-dp-cal]');if(!btn)return;
+ const input=btn.parentNode.querySelector('.dp-cal-input');if(!input)return;
+ if(input.showPicker){try{input.showPicker();return;}catch(err){}}
+ input.style.pointerEvents='auto';input.style.opacity='1';input.focus();
+});
+document.addEventListener('change',e=>{
+ const input=e.target.closest('.dp-cal-input');if(!input||!input.value)return;
+ location.href=input.dataset.dpBase.split('__D__').join(input.value);
+});
+})();
+
+(()=>{
+const badge=document.querySelector('[data-notif-count]');
+if(!badge||new URLSearchParams(location.search).get('page')==='reminders')return;
+async function refresh(){
+ try{
+  const r=await fetch('/reminders-unread',{headers:{Accept:'application/json'},credentials:'same-origin'});
+  if(!r.ok)return;
+  const n=(await r.json()).count||0;
+  badge.textContent=n>99?'99+':String(n);badge.hidden=n<1;
+ }catch(e){}
+}
+setInterval(refresh,60000);
+})();

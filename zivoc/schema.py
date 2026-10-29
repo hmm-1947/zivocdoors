@@ -167,6 +167,14 @@ def deletion_ensure():
     ensure_log_table()
 
 
+def notify_ensure():
+    if not db.one("SHOW COLUMNS FROM reminders LIKE 'created_at'"):
+        db.q('ALTER TABLE reminders ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP')
+    if not db.one("SHOW COLUMNS FROM users LIKE 'reminders_seen_at'"):
+        db.q('ALTER TABLE users ADD COLUMN reminders_seen_at DATETIME NULL')
+        db.q('UPDATE users SET reminders_seen_at=NOW()')
+
+
 def ensure_all():
 
     if _ready['done']:
@@ -185,5 +193,6 @@ def ensure_all():
         avatar_ensure()
         survey_view_ensure()
         deletion_ensure()
+        notify_ensure()
 
         _ready['done'] = True

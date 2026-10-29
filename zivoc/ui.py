@@ -1,7 +1,11 @@
+from datetime import timedelta
+from urllib.parse import urlencode
+
 from markupsafe import Markup, escape
 
+
 from . import db
-from .core import money, php_date, wf_money
+from .core import money, now, php_date, wf_money
 from .helpers import csrf_token, privileged
 
 ICON_PATHS = {
@@ -79,6 +83,36 @@ def tasks(items):
     return Markup('').join(out)
 
 
+def date_pills(page, keep, f_from, f_to):
+    day = now().date()
+    today = day.isoformat()
+    monday = day - timedelta(days=day.weekday())
+    ranges = (('All', '', ''), ('Today', today, today), ('This week', monday.isoformat(), (monday + timedelta(days=6)).isoformat()),
+              ('Last 7 days', (day - timedelta(days=6)).isoformat(), today))
+    base = {key: value for key, value in (keep or {}).items() if value not in (None, '') and key not in ('from', 'to', 'page', 'offset', 'p')}
+
+    def href(start, end):
+        query = {'page': page}
+        query.update(base)
+        if start:
+            query['from'] = start
+            query['to'] = end
+        return '?' + urlencode(query)
+
+    current = (f_from or '', f_to or '')
+    out = []
+    matched = False
+    for label, start, end in ranges:
+        active = current == (start, end)
+        matched = matched or active
+        out.append(Markup('<a class="dp-pill%s" href="%s">%s</a>') % (' active' if active else '', href(start, end), label))
+    custom = not matched and current[0] != '' and current[0] == current[1]
+    out.append(Markup('<span class="dp-cal-wrap"><button type="button" class="dp-cal%s" data-dp-cal aria-label="Pick a date" title="Pick a date">%s</button>'
+                      '<input type="date" class="dp-cal-input" tabindex="-1" aria-hidden="true" value="%s" data-dp-base="%s"></span>') % (
+        ' active' if custom else '', icon('calendar'), current[0] if custom else '', href('__D__', '__D__')))
+    return Markup('<div class="dp-bar" role="group" aria-label="Date filter">%s</div>') % Markup('').join(out)
+
+
 def register(app):
     app.jinja_env.globals.update(
         icon=icon,
@@ -92,4 +126,6 @@ def register(app):
         money=money,
         wf_money=wf_money,
         php_date=php_date,
+        date_pills=date_pills,
+
     )

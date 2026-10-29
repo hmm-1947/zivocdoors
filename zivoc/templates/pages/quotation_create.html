@@ -22,7 +22,7 @@
 <p id="qt-item-message" role="status" class="muted"></p>
 <div class="table-scroll"><table class="hr-table zf-items"><thead><tr><th>SL No</th><th>Action</th><th>Code</th><th>Name</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody id="qt-product-rows">{% for key, item in (old.get('qt_items') or {}).items() %}{% set product = catalog.get(item['code']) %}{% if product %}<tr><td data-qt-sl></td><td class="zf-row-actions"><button type="button" class="zf-icon-btn zf-del" data-qt-remove title="Delete">✕</button><button type="button" class="zf-icon-btn" data-qt-edit title="Edit">✎</button><button type="button" class="zf-icon-btn zf-save" data-qt-save hidden>Save</button></td><td>{{ item['code'] }}<input type="hidden" name="qt_items[{{ key }}][code]" value="{{ item['code'] }}"></td><td>{{ product['name'] }}</td><td><input aria-label="Quantity" name="qt_items[{{ key }}][quantity]" type="number" min="1" max="10000" step="1" value="{{ item['quantity'] }}" readonly required></td><td><input aria-label="Unit price" name="qt_items[{{ key }}][unit_price]" type="number" min="0" step="0.01" value="{{ item['unit_price'] }}" readonly required></td><td data-qt-line-total></td></tr>{% endif %}{% endfor %}</tbody></table></div>
 <div class="zf-grid zf-foot">
-<div class="zf-c8"><div class="zf-terms-head"><span class="zf-lab">Terms & Conditions :</span><label class="zf-inline">Select Template :<select name="template_id" data-qt-template><option value="">Select Template</option>{% for t in templates %}<option value="{{ t['id'] }}" data-terms="{{ t['terms'] }}" {{ 'selected' if to_int(old.get('template_id', 0)) == t['id']|int else '' }}>{{ t['title'] }}</option>{% endfor %}</select></label></div><textarea name="terms" rows="9" maxlength="5000">{{ old.get('terms', '') }}</textarea></div>
+<div class="zf-c8"><textarea name="terms" rows="9" aria-label="Terms and conditions" maxlength="5000">{{ old.get('terms', '') }}</textarea></div>
 <div class="zf-c4 zf-sum">
 <label>Total Qty :<input type="text" id="qt-total-qty" value="0" readonly></label>
 <label>Subtotal :<input type="text" id="qt-subtotal" value="0.00" readonly></label>
@@ -31,6 +31,7 @@
 <label class="check-label"><input type="checkbox" name="print_after" value="1">Print</label>
 <button type="submit" class="zf-submit" data-party-submit {{ 'disabled' if catalog_error else '' }}>Create Quotation</button>
 </div></div></section>
+<section class="card zf-card"><div class="zf-grid"><label class="zf-c3">Survey Date :<input type="date" name="survey_date" id="survey-date" min="{{ today }}" value="{{ old.get('survey_date', '') }}" required></label><label class="zf-c3">Survey Time :<input type="time" name="survey_time" id="survey-time" value="{{ old.get('survey_time', '') }}" required></label></div></section>
 <details class="card zf-card zf-more"><summary>More options (GST, charges, validity, payment terms)</summary><div class="zf-grid">
 {% for key, label in [('tax_rate', 'GST (%)'), ('installation', 'Installation / fitting (₹)'), ('transport', 'Transport (₹)'), ('additional', 'Additional charges (₹)')] %}<label class="zf-c3">{{ label }}<input type="number" name="{{ key }}" min="0" step="0.01" value="{{ old.get(key, 0) }}"></label>{% endfor %}
 <label class="zf-c3">Valid until<input type="date" name="valid_until" value="{{ old.get('valid_until', default_valid) }}" required></label>
