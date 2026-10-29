@@ -20,7 +20,7 @@ from .leads import lead_form_values, lead_listing, party_people
 from .avatars import refresh as avatar_refresh
 from .team import sync_team
 
-from .quotations import qt_failed_form, qt_listing, qt_quote_rows
+from .quotations import qt_edit_data, qt_failed_form, qt_listing, qt_quote_rows
 from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf_latest_drawing, wf_measurements, wf_quote_number, wf_quote_status,
                        wf_ready, wf_survey)
 
@@ -177,7 +177,7 @@ def ctx_orders(u, all_access):
         where.append('(o.customer LIKE %s OR o.phone LIKE %s OR CAST(o.id AS CHAR) LIKE %s OR u.name LIKE %s)')
         like = '%' + search + '%'
         params.extend([like] * 4)
-    where.append("(o.id NOT IN (SELECT order_id FROM wf_surveys) OR o.id IN (SELECT order_id FROM wf_surveys WHERE status IN ('completed','approved')))")
+    where.append('o.id NOT IN (SELECT order_id FROM wf_quotations WHERE converted_at IS NULL)')
     clause = ' AND '.join(where)
     base = 'FROM orders o JOIN users u ON u.id=o.salesman_id LEFT JOIN wf_quotations q ON q.order_id=o.id WHERE ' + clause
     count_row = db.one('SELECT COUNT(*) n,COALESCE(SUM(o.total),0) amount ' + base, params)
@@ -407,11 +407,20 @@ def ctx_quotation_create(u, all_access):
         catalog = erp.catalog()
     except Exception as exc:
         catalog_error = str(exc)
-    return {
+    ctx = {
         'old': qt_failed_form('qt_create'), 'catalog': catalog, 'catalog_error': catalog_error, 'today': today(), 'default_valid': add_days(today(), 30),
-        'people': party_people(u),
+        'people': party_people(u), 'edit': None, 'edit_error': None, 'now_local': now().strftime('%Y-%m-%dT%H:%M'),
         'templates': db.rows('SELECT * FROM qt_templates WHERE active=1 ORDER BY title'),
     }
+    edit_id = to_int(request.args.get('id', 0))
+    if edit_id:
+        try:
+            edit = qt_edit_data(u, edit_id)
+            ctx['edit'] = edit
+            ctx['old'] = edit['old']
+        except AppError as exc:
+            ctx['edit_error'] = str(exc)
+    return ctx
 
 
 def ctx_quotations(u):
@@ -424,7 +433,7 @@ def ctx_quotations(u):
     for row in listing:
         row['details'] = json_obj(row.get('customer_details'))
         row['effective'] = wf_quote_status(row)
-        row['display_status'] = 'Converted' if row['stage'] == 'production' else ('Revised' if row['effective'] == 'revised' else (row.get('lead_stage') or 'Quotation'))
+        row['display_status'] = 'Converted' if (row['stage'] == 'production' or row.get('converted_at')) else ('Revised' if row['effective'] == 'revised' else (row.get('lead_stage') or 'Quotation'))
     keep = {key: request.args[key] for key in ('from', 'to', 'customer', 'stage', 'status', 'search', 'customer_type') if request.args.get(key)}
     limit = request.args.get('limit', '100')
     if limit not in ('100', '250', '500', '1000', 'All'):

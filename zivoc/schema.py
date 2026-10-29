@@ -66,7 +66,22 @@ def qt_ensure():
     db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('quotation_ui_v2','1')")
 
 
+def quote_flow_ensure():
+    if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='quotation_flow_v3'"):
+        return
+    if not db.one("SHOW COLUMNS FROM wf_surveys LIKE 'survey_at'"):
+        db.q('ALTER TABLE wf_surveys ADD COLUMN survey_at DATETIME NULL')
+    if not db.one("SHOW COLUMNS FROM wf_quotations LIKE 'converted_at'"):
+        db.q('ALTER TABLE wf_quotations ADD COLUMN converted_at DATETIME NULL')
+    db.q("UPDATE wf_surveys s JOIN (SELECT order_id,MIN(due_at) due FROM reminders WHERE title LIKE 'Door survey%' AND order_id IS NOT NULL GROUP BY order_id) r "
+         'ON r.order_id=s.order_id SET s.survey_at=r.due WHERE s.survey_at IS NULL')
+    db.q("UPDATE wf_quotations q JOIN wf_surveys s ON s.order_id=q.order_id SET q.converted_at=COALESCE(s.updated_at,NOW()) "
+         "WHERE q.converted_at IS NULL AND s.status IN ('completed','approved')")
+    db.q("INSERT IGNORE INTO wf_meta(meta_key,meta_value) VALUES ('quotation_flow_v3','1')")
+
+
 def survey_ensure():
+
     if db.one("SELECT meta_value FROM wf_meta WHERE meta_key='survey_sides_v1'"):
         return
     db.q(
@@ -185,6 +200,7 @@ def ensure_all():
         hr_ensure()
         wf_ensure()
         qt_ensure()
+        quote_flow_ensure()
         survey_ensure()
         brand_image_ensure()
         lead_ensure()

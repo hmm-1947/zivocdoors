@@ -1,4 +1,4 @@
-<a class="back" href="{{ ('?page=order&id=%d#wf-quotation' % o['id']) if o else '?page=orders' }}">← Back to quotation</a>
+<a class="back" href="{{ ('?page=quotation_create&id=%d' % o['id']) if o else '?page=orders' }}">← Back to quotation</a>
 {% if error %}<p class="notice error">{{ error }}</p>{% else %}
 <div class="page-heading"><div><span class="eyebrow">ORDER #{{ '%04d' % o['id'] }} · SURVEY</span><h1>Door survey</h1><p class="muted">{{ o['customer'] }} · enter the four side measurements, the inner measurement and the hinge position for each item.</p></div></div>
 {{ start_form('wf_survey_submit', 'sv-form') }}<input type="hidden" name="order_id" value="{{ o['id'] }}">

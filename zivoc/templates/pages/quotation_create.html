@@ -1,14 +1,16 @@
-<div class="page-heading"><div><span class="eyebrow">QUOTATIONS</span><h1>Create Quotation</h1><p class="muted">Create a customer quotation now; site measurements and drawing approvals can follow before production.</p></div><a href="?page=quotations">Quotation Details →</a></div>
+<div class="page-heading"><div><span class="eyebrow">QUOTATIONS</span><h1>{{ 'Update Quotation' if edit else 'Create Quotation' }}</h1><p class="muted">{% if edit %}Voucher No : <strong>{{ edit['voucher'] }}</strong> · update the quotation, schedule the door survey and convert it to an order.{% else %}Create a customer quotation now; site measurements and drawing approvals can follow before production.{% endif %}</p></div><a href="?page=quotations">Quotation Details →</a></div>
 {% if not wf_can_edit(u) %}<p class="notice">Sales or admin access is required to create a quotation.</p>
+{% elif edit_error %}<p class="notice error">{{ edit_error }}</p>
 {% else %}
 {% if catalog_error %}<p class="notice error">{{ catalog_error }}</p>{% endif %}
-<form method="post" class="qt-create wf-quote-form zf-form" data-party data-lock data-self="0"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="qt_create"><input type="hidden" name="lead_id" id="party-lead-id" value="{{ old.get('lead_id', '') }}"><input type="hidden" name="discount_type" value="amount"><input type="hidden" name="discount" id="qt-discount" value="{{ old.get('discount', 0) }}">
-<section class="card zf-card"><p class="zf-title"><span>Quotation</span> Details :</p><div class="zf-grid">
+{% if edit and edit['converted'] %}<p class="notice">This quotation has been converted to an order and can no longer be edited.</p>{% endif %}
+<form method="post" class="qt-create wf-quote-form zf-form" data-party data-lock data-self="0" {{ 'data-edit' if edit else '' }}><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'qt_update' if edit else 'qt_create' }}">{% if edit %}<input type="hidden" name="order_id" value="{{ edit['order']['id'] }}">{% endif %}<input type="hidden" name="lead_id" id="party-lead-id" value="{{ old.get('lead_id', '') }}"><input type="hidden" name="discount_type" value="amount"><input type="hidden" name="discount" id="qt-discount" value="{{ old.get('discount', 0) }}">
+<section class="card zf-card"><div class="zf-title-row"><p class="zf-title"><span>Quotation</span> Details :</p>{% if edit %}<div class="qt-menu" data-qt-menu><button type="button" class="qt-menu-btn" data-qt-menu-btn aria-haspopup="true" aria-expanded="false" aria-label="Quotation actions" title="Quotation actions"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button><div class="qt-menu-list" data-qt-menu-list hidden role="menu"><button type="button" role="menuitem" data-qt-open="qt-schedule-dialog" {{ 'disabled' if edit['survey_done'] or edit['converted'] else '' }}>Schedule survey</button><button type="button" role="menuitem" data-qt-open="qt-convert-dialog" {{ 'disabled' if not edit['survey_done'] or edit['converted'] else '' }} title="{{ 'Already converted' if edit['converted'] else ('' if edit['survey_done'] else 'Complete the door survey first') }}">Convert to order</button></div></div>{% endif %}</div><div class="zf-grid">
 <label class="zf-c2">Quotation Date :<input type="date" name="quote_date" value="{{ old.get('quote_date', today) }}" required></label>
 {% set party_name_field = 'customer' %}
 {% set addr_req = true %}
 {% set hide_franchise = true %}{% include 'pages/_party.html' %}
-{% if all_access %}<div class="zf-c3">{{ assignment(u) }}</div>{% endif %}
+{% if all_access and not edit %}<div class="zf-c3">{{ assignment(u) }}</div>{% endif %}
 <label class="zf-c5">End Customer :<textarea name="end_customer" placeholder="Enter End Customer">{{ old.get('end_customer', '') }}</textarea></label>
 <label class="zf-c4">Quotation Remark :<textarea name="remark" placeholder="Enter Quotation Remark">{{ old.get('remark', '') }}</textarea></label>
 </div></section>
@@ -20,7 +22,7 @@
 <div class="zf-c1 zf-end"><button type="button" class="zf-add" data-qt-add>Add</button></div>
 </div>
 <p id="qt-item-message" role="status" class="muted"></p>
-<div class="table-scroll"><table class="hr-table zf-items"><thead><tr><th>SL No</th><th>Action</th><th>Code</th><th>Name</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody id="qt-product-rows">{% for key, item in (old.get('qt_items') or {}).items() %}{% set product = catalog.get(item['code']) %}{% if product %}<tr><td data-qt-sl></td><td class="zf-row-actions"><button type="button" class="zf-icon-btn zf-del" data-qt-remove title="Delete">✕</button><button type="button" class="zf-icon-btn" data-qt-edit title="Edit">✎</button><button type="button" class="zf-icon-btn zf-save" data-qt-save hidden>Save</button></td><td>{{ item['code'] }}<input type="hidden" name="qt_items[{{ key }}][code]" value="{{ item['code'] }}"></td><td>{{ product['name'] }}</td><td><input aria-label="Quantity" name="qt_items[{{ key }}][quantity]" type="number" min="1" max="10000" step="1" value="{{ item['quantity'] }}" readonly required></td><td><input aria-label="Unit price" name="qt_items[{{ key }}][unit_price]" type="number" min="0" step="0.01" value="{{ item['unit_price'] }}" readonly required></td><td data-qt-line-total></td></tr>{% endif %}{% endfor %}</tbody></table></div>
+<div class="table-scroll"><table class="hr-table zf-items"><thead><tr><th>SL No</th><th>Action</th><th>Code</th><th>Name</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody id="qt-product-rows">{% for key, item in (old.get('qt_items') or {}).items() %}{% set product = catalog.get(item['code']) %}{% if product %}<tr><td data-qt-sl></td><td class="zf-row-actions"><button type="button" class="zf-icon-btn zf-edit" data-qt-edit title="Edit">Edit</button><button type="button" class="zf-icon-btn zf-save" data-qt-save hidden>Save</button><button type="button" class="zf-icon-btn zf-del" data-qt-remove title="Delete">Delete</button></td><td><span data-qt-code-text>{{ item['code'] }}</span><input type="hidden" name="qt_items[{{ key }}][code]" value="{{ item['code'] }}"></td><td data-qt-name-text>{{ product['name'] }}</td><td><input aria-label="Quantity" name="qt_items[{{ key }}][quantity]" type="number" min="1" max="10000" step="1" value="{{ item['quantity'] }}" readonly required></td><td><input aria-label="Unit price" name="qt_items[{{ key }}][unit_price]" type="number" min="0" step="0.01" value="{{ item['unit_price'] }}" readonly required></td><td data-qt-line-total></td></tr>{% endif %}{% endfor %}</tbody></table></div>
 <div class="zf-grid zf-foot">
 <div class="zf-c8"><textarea name="terms" rows="9" aria-label="Terms and conditions" maxlength="5000">{{ old.get('terms', '') }}</textarea></div>
 <div class="zf-c4 zf-sum">
@@ -28,10 +30,9 @@
 <label>Subtotal :<input type="text" id="qt-subtotal" value="0.00" readonly></label>
 <div class="zf-disc"><span>Discount :</span><input type="number" id="qt-disc-per" placeholder="%" step="any" min="0" max="100" value="0" aria-label="Discount percentage"><input type="number" id="qt-disc-amt" step="0.01" min="0" value="0.00" aria-label="Discount amount"></div>
 <label>Grand Total :<input type="text" id="qt-grand" value="0.00" readonly></label>
-<label class="check-label"><input type="checkbox" name="print_after" value="1">Print</label>
-<button type="submit" class="zf-submit" data-party-submit {{ 'disabled' if catalog_error else '' }}>Create Quotation</button>
+{% if not edit %}<label class="check-label"><input type="checkbox" name="print_after" value="1">Print</label>{% endif %}
+<button type="submit" class="zf-submit" data-party-submit {{ 'disabled' if catalog_error or (edit and edit['converted']) else '' }}>{{ 'Update Quotation' if edit else 'Create Quotation' }}</button>
 </div></div></section>
-<section class="card zf-card"><div class="zf-grid"><label class="zf-c3">Survey Date :<input type="date" name="survey_date" id="survey-date" min="{{ today }}" value="{{ old.get('survey_date', '') }}" required></label><label class="zf-c3">Survey Time :<input type="time" name="survey_time" id="survey-time" value="{{ old.get('survey_time', '') }}" required></label></div></section>
 <details class="card zf-card zf-more"><summary>More options (GST, charges, validity, payment terms)</summary><div class="zf-grid">
 {% for key, label in [('tax_rate', 'GST (%)'), ('installation', 'Installation / fitting (₹)'), ('transport', 'Transport (₹)'), ('additional', 'Additional charges (₹)')] %}<label class="zf-c3">{{ label }}<input type="number" name="{{ key }}" min="0" step="0.01" value="{{ old.get(key, 0) }}"></label>{% endfor %}
 <label class="zf-c3">Valid until<input type="date" name="valid_until" value="{{ old.get('valid_until', default_valid) }}" required></label>
@@ -42,5 +43,23 @@
 <div class="notice zf-c12" data-wf-quote-totals role="status"></div>
 </div></details>
 </form>
+{% if edit and not edit['converted'] %}
+<dialog class="qt-dialog" id="qt-schedule-dialog" aria-labelledby="qt-schedule-title" data-now="{{ now_local }}" data-today="{{ today }}">
+<form method="post" class="qt-dialog-form" data-qt-schedule-form><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="qt_schedule"><input type="hidden" name="order_id" value="{{ edit['order']['id'] }}">
+<div class="qt-dialog-head"><h3 id="qt-schedule-title">Schedule survey</h3><button type="button" class="qt-dialog-x" data-qt-close aria-label="Close">✕</button></div>
+<p class="muted">{{ edit['voucher'] }} · {{ edit['order']['customer'] }}{% if edit['survey'] and edit['survey'].get('survey_at') %}<br>Currently scheduled: <strong>{{ php_date('d-m-Y h:i A', edit['survey']['survey_at']) }}</strong>{% endif %}</p>
+<div class="qt-dialog-grid"><label>Survey date<input type="date" name="survey_date" min="{{ today }}" required></label><label>Survey time<input type="time" name="survey_time" required></label></div>
+<p class="notice error" data-qt-schedule-error hidden></p>
+<p class="muted qt-dialog-note">Choose today or a future date. For today, the time must be at least 5 minutes from now.</p>
+<div class="qt-dialog-foot"><button type="button" class="qt-btn-ghost" data-qt-close>Cancel</button><button type="submit" class="qt-btn-primary">Schedule</button></div>
+</form></dialog>
+<dialog class="qt-dialog" id="qt-convert-dialog" aria-labelledby="qt-convert-title">
+<form method="post" class="qt-dialog-form"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="qt_convert"><input type="hidden" name="order_id" value="{{ edit['order']['id'] }}">
+<div class="qt-dialog-head"><h3 id="qt-convert-title">Convert to order</h3><button type="button" class="qt-dialog-x" data-qt-close aria-label="Close">✕</button></div>
+<p class="qt-confirm-text">Are you sure you want to continue?</p>
+<p class="qt-voucher">Voucher No : <strong>{{ edit['voucher'] }}</strong></p>
+<div class="qt-dialog-foot"><button type="button" class="qt-btn-ghost" data-qt-close>Cancel</button><button type="submit" class="qt-btn-primary">Yes, convert</button></div>
+</form></dialog>
+{% endif %}
 <script type="application/json" id="party-data">{{ people|tojson }}</script>
 {% endif %}
