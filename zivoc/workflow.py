@@ -23,7 +23,7 @@ DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 
 def wf_can_edit(u):
-    return u['role'] in ('admin', 'salesman', 'freelancer')
+    return u['role'] in ('admin', 'salesman', 'freelancer', 'fabricator')
 
 
 def wf_text(value, maximum=2000):
@@ -282,6 +282,68 @@ def _insert_sql(table, columns, leading=()):
     return 'INSERT INTO %s(%s) VALUES (%s)' % (table, ','.join(names), ','.join(['%s'] * len(names)))
 
 
+def _survey_entries(raw, items, strict):
+    entries = []
+    for item in items:
+        row = raw.get(str(item['id']))
+        try:
+            if not isinstance(row, dict):
+                raise AppError('Complete the survey for every item.')
+            hinge = wf_text(row.get('hinge', ''), 10)
+            if hinge not in ('Left', 'Right'):
+                raise AppError('Choose a hinge position for every item.')
+            sides = {}
+            try:
+                for key in ('top', 'bottom', 'left', 'right'):
+                    sides[key] = wf_number(row.get(key, ''), 0.1, 20000)
+            except AppError:
+                raise AppError('Enter the top, bottom, left and right measurements (0.01 to 2000 cm) for every item.')
+            inner = wf_text(row.get('inner', ''), 80)
+            if inner == '':
+                raise AppError('Enter the inner measurement for every item.')
+            brand_id = filter_int(row.get('brand_id', 0)) or 0
+            brand = None
+            if brand_id:
+                brand = db.one('SELECT id,name FROM door_handle_brands WHERE id=%s AND active=1', [brand_id])
+                if not brand:
+                    raise AppError('The selected lock brand is no longer available.')
+            frame_mode = 'noframe' if wf_text(row.get('frame', ''), 10) == 'noframe' else 'frame'
+            display_unit = 'in' if wf_text(row.get('unit', ''), 5) == 'in' else 'cm'
+        except AppError:
+            if strict:
+                raise
+            continue
+        entries.append((item, sides, inner, hinge, brand, frame_mode, display_unit))
+    return entries
+
+
+def _survey_store(oid, entries):
+    existing = {}
+    for row in db.rows('SELECT id,order_item_id FROM wf_measurements WHERE order_id=%s ORDER BY id', [oid]):
+        existing.setdefault(int(row['order_item_id']), int(row['id']))
+    for item, sides, inner, hinge, brand, frame_mode, display_unit in entries:
+        length = sides['top']
+        height = sides['left']
+        values = {
+            'opening_width': length, 'opening_height': height, 'wall_thickness': 0,
+            'frame_width': length, 'frame_height': height, 'shutter_width': length, 'shutter_height': height,
+            'direction': hinge, 'opening_type': 'Inward', 'location': 'Survey completed', 'quantity': int(item['quantity']),
+            'side_top': '%g' % sides['top'], 'side_bottom': '%g' % sides['bottom'],
+            'side_left': '%g' % sides['left'], 'side_right': '%g' % sides['right'],
+            'inner_detail': inner,
+            'handle_brand_id': int(brand['id']) if brand else None, 'handle_brand': brand['name'] if brand else None,
+            'frame_mode': frame_mode, 'display_unit': display_unit,
+        }
+        columns = list(values.keys())
+        params = [values[key] for key in columns]
+        record_id = existing.get(int(item['id']))
+        if record_id:
+            db.q('UPDATE wf_measurements SET ' + ','.join(key + '=%s' for key in columns) + ',active=1 WHERE id=%s AND order_id=%s',
+                 params + [record_id, oid])
+        else:
+            db.q(_insert_sql('wf_measurements', ['order_item_id'] + columns, ['order_id']), [oid, item['id']] + params)
+
+
 def wf_action(action, u, transaction=True, initial=False):
     from .quotations import qt_customer_details, qt_quote_rows, qt_template_id
     if not action.startswith('wf_'):
@@ -337,67 +399,24 @@ def wf_action(action, u, transaction=True, initial=False):
         wf_invalidate(oid, False)
         db.q('UPDATE wf_surveys SET status=%s,revision=revision+1,updated_by=%s WHERE order_id=%s', [status, u['id'], oid])
         wf_log(oid, u, 'survey', 'Survey saved: ' + status + '. Previous drawings / quotation require revision.')
-    elif action == 'wf_survey_submit':
+    elif action in ('wf_survey_submit', 'wf_survey_progress'):
         raw = post().get('survey', {})
         items = wf_items(oid)
         if not isinstance(raw, dict) or not items:
             raise AppError('Complete the survey for every item.')
-        entries = []
-        for item in items:
-            row = raw.get(str(item['id']))
-            if not isinstance(row, dict):
-                raise AppError('Complete the survey for every item.')
-            hinge = wf_text(row.get('hinge', ''), 10)
-            if hinge not in ('Left', 'Right'):
-                raise AppError('Choose a hinge position for every item.')
-            sides = {}
-            try:
-                for key in ('top', 'bottom', 'left', 'right'):
-                    sides[key] = wf_number(row.get(key, ''), 0.1, 20000)
-            except AppError:
-                raise AppError('Enter the top, bottom, left and right measurements (0.01 to 2000 cm) for every item.')
-            inner = wf_text(row.get('inner', ''), 80)
-            if inner == '':
-                raise AppError('Enter the inner measurement for every item.')
-            brand_id = filter_int(row.get('brand_id', 0)) or 0
-            brand = None
-            if brand_id:
-                brand = db.one('SELECT id,name FROM door_handle_brands WHERE id=%s AND active=1', [brand_id])
-                if not brand:
-                    raise AppError('The selected lock brand is no longer available.')
-            frame_mode = 'noframe' if wf_text(row.get('frame', ''), 10) == 'noframe' else 'frame'
-            display_unit = 'in' if wf_text(row.get('unit', ''), 5) == 'in' else 'cm'
-            entries.append((item, sides, inner, hinge, brand, frame_mode, display_unit))
-        existing = {}
-        for row in db.rows('SELECT id,order_item_id FROM wf_measurements WHERE order_id=%s ORDER BY id', [oid]):
-            existing.setdefault(int(row['order_item_id']), int(row['id']))
-        db.q('UPDATE wf_measurements SET active=0 WHERE order_id=%s', [oid])
-        for item, sides, inner, hinge, brand, frame_mode, display_unit in entries:
-            length = sides['top']
-            height = sides['left']
-            values = {
-                'opening_width': length, 'opening_height': height, 'wall_thickness': 0,
-                'frame_width': length, 'frame_height': height, 'shutter_width': length, 'shutter_height': height,
-                'direction': hinge, 'opening_type': 'Inward', 'location': 'Survey completed', 'quantity': int(item['quantity']),
-                'side_top': '%g' % sides['top'], 'side_bottom': '%g' % sides['bottom'],
-                'side_left': '%g' % sides['left'], 'side_right': '%g' % sides['right'],
-                'inner_detail': inner,
-                'handle_brand_id': int(brand['id']) if brand else None, 'handle_brand': brand['name'] if brand else None,
-                'frame_mode': frame_mode, 'display_unit': display_unit,
-            }
-            columns = list(values.keys())
-            params = [values[key] for key in columns]
-            record_id = existing.get(int(item['id']))
-            if record_id:
-                db.q('UPDATE wf_measurements SET ' + ','.join(key + '=%s' for key in columns) + ',active=1 WHERE id=%s AND order_id=%s',
-                     params + [record_id, oid])
-            else:
-                db.q(_insert_sql('wf_measurements', ['order_item_id'] + columns, ['order_id']), [oid, item['id']] + params)
-        redo = int(survey['revision']) > 0 and db.one('SELECT id FROM wf_quotations WHERE order_id=%s', [oid]) is not None
-        wf_invalidate(oid, redo)
-        db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
-        wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
-        session['quote_to_list'] = 1
+        partial = action == 'wf_survey_progress'
+        if not partial or survey['status'] == 'pending':
+            entries = _survey_entries(raw, items, not partial)
+            if not partial:
+                db.q('UPDATE wf_measurements SET active=0 WHERE order_id=%s', [oid])
+            _survey_store(oid, entries)
+            if not partial:
+                redo = int(survey['revision']) > 0 and db.one('SELECT id FROM wf_quotations WHERE order_id=%s', [oid]) is not None
+                wf_invalidate(oid, redo)
+                db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
+                wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
+                session['quote_to_list'] = 1
+
     elif action == 'wf_survey_review':
 
         status = required('status')

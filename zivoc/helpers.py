@@ -95,7 +95,7 @@ def salesman(u):
     if not privileged(u):
         return int(u['id'])
     sid = to_int(val("salesman_id"))
-    if not db.one("SELECT id FROM users WHERE id=%s AND role IN ('salesman','freelancer') AND active=1", [sid]):
+    if not db.one("SELECT id FROM users WHERE id=%s AND role IN ('salesman','freelancer','fabricator') AND active=1", [sid]):
         raise AppError('Select an active salesman or freelancer.')
     return sid
 

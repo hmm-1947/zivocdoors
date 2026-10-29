@@ -91,3 +91,11 @@ button,.button,.sidebar nav a{min-height:44px}
 .menu-btn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 }
 @media(min-width:701px){.menu-btn{display:none}}
+
+.bottom-nav{overflow:visible;border-radius:22px 22px 0 0;align-items:flex-end}
+.bottom-nav a{flex:1;min-width:0}
+.bottom-nav .nav-center{position:relative;margin-top:-34px;justify-content:flex-end;color:#202127;font-weight:600}
+.bottom-nav .nav-fab{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:#4f1fe0;color:#fff;border:6px solid #fff;box-shadow:0 8px 20px #4f1fe055,0 0 0 6px #ece7ff}
+.bottom-nav .nav-fab svg{width:26px;height:26px;stroke-width:1.8}
+.bottom-nav .nav-center.active{color:var(--purple)}
+.bottom-nav .nav-center.active .nav-fab svg{stroke-width:1.8}

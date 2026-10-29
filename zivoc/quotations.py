@@ -7,6 +7,7 @@ from . import db
 from .core import AppError
 from .helpers import owner, privileged, require_admin, required, salesman, val
 from .core import post
+from .erpleads import push_lead
 from .leads import LEAD_STAGES, insert_lead
 from .workflow import WF_MEASURES, wf_action, wf_can_edit, wf_date, wf_items, wf_log, wf_measurements, wf_number, wf_quantity, wf_text
 
@@ -173,6 +174,8 @@ def qt_action(action, u):
              [sid, oid, lead_id, 'Quotation follow-up: ' + name, wf_date(contact) + ' 09:00:00'])
     wf_log(oid, u, 'quotation', 'Quotation created from customer and products. Survey/drawing preparation remains available.')
     db.commit()
+    if not lead:
+        push_lead(lead_id)
     session['quote_created_order'] = oid
     return True
 

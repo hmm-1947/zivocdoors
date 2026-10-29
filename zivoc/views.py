@@ -26,10 +26,10 @@ from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf
 
 ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'checkout',
                  'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes', 'deletion_logs')
-NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'Orders'), ('quotations', 'Quotation Details'),
-       ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Commissions'))
+NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'My Orders'), ('quotations', 'Quotation Details'),
+       ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Wallet'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
-BOTTOM_NAV = (('home', 'Home'), ('orders', 'Orders'), ('leads', 'Leads'), ('profile', 'Profile'))
+BOTTOM_NAV = (('home', 'Home'), ('leads', 'Leads'), ('quotation_create', 'Quotation'), ('orders', 'My Orders'), ('commissions', 'Wallet'))
 
 
 def scope(all_access, u, column='salesman_id'):
@@ -75,7 +75,7 @@ def ctx_home(u, all_access, reminders):
     earned = float(db.one('SELECT COALESCE(SUM(c.amount),0) n FROM commissions c JOIN orders o ON o.id=c.order_id WHERE ' +
                           ('1=1' if all_access else 'c.salesman_id=%d' % int(u['id'])) + ' AND ' + exists, [first, nxt])['n'])
     if all_access:
-        target = float(db.one("SELECT COALESCE(SUM(monthly_target),0) n FROM users WHERE role IN ('salesman','freelancer') AND active=1")['n'])
+        target = float(db.one("SELECT COALESCE(SUM(monthly_target),0) n FROM users WHERE role IN ('salesman','freelancer','fabricator') AND active=1")['n'])
     else:
         target = float(u['monthly_target'])
     pct = int(min(100, php_round(approved / target * 100))) if target > 0 else 0
@@ -167,6 +167,7 @@ def ctx_orders(u, all_access):
         where.append('(o.customer LIKE %s OR o.phone LIKE %s OR CAST(o.id AS CHAR) LIKE %s OR u.name LIKE %s)')
         like = '%' + search + '%'
         params.extend([like] * 4)
+    where.append("(o.id NOT IN (SELECT order_id FROM wf_surveys) OR o.id IN (SELECT order_id FROM wf_surveys WHERE status IN ('completed','approved')))")
     clause = ' AND '.join(where)
     base = 'FROM orders o JOIN users u ON u.id=o.salesman_id LEFT JOIN wf_quotations q ON q.order_id=o.id WHERE ' + clause
     count_row = db.one('SELECT COUNT(*) n,COALESCE(SUM(o.total),0) amount ' + base, params)
@@ -271,9 +272,10 @@ def ctx_workflow(u, o, wf):
             latest = wf_latest_drawing(int(row['id']))
             ref = latest['id'] if latest else 'Pending'
         quote_rows.append({'row': row, 'line': line, 'ref': ref, 'key': key})
+    survey_done = len({int(m['order_item_id']) for m in measurements if m.get('direction') and m.get('inner_detail') and all(m.get(k) not in (None, '') for k in ('side_top', 'side_bottom', 'side_left', 'side_right'))})
     return {
         'edit': wf_edit, 'items': items, 'measurements': measurements, 'quote': quote, 'approved': approved, 'views': views,
-        'survey_rows': survey_rows, 'qform': qform, 'quote_rows': quote_rows,
+        'survey_rows': survey_rows, 'survey_done': survey_done, 'survey_total': len(items), 'qform': qform, 'quote_rows': quote_rows,
         'quote_history': db.rows('SELECT revision,created_at FROM wf_quotation_revisions WHERE quotation_id=%s ORDER BY revision DESC', [quote['id']]) if quote else [],
         'quote_status': wf_quote_status(quote) if quote else None,
         'default_valid': add_days(today(), 30),
@@ -324,9 +326,9 @@ def ctx_survey(u, all_access):
             if item['id'] == wanted:
                 start = index
         brands = [{'id': int(b['id']), 'name': b['name'], 'company': b['company'] or '', 'details': b['details'] or '', 'image': ('/brand-image?id=%d' % int(b['id'])) if b.get('image') else ''} for b in dh_brands(True)]
-        return {'error': None, 'o': o, 'survey_items': items, 'survey_start': start, 'handle_brands': brands}
+        return {'error': None, 'o': o, 'survey_items': items, 'survey_start': start, 'handle_brands': brands, 'survey_status': wf_survey(oid)['status']}
     except Exception as exc:
-        return {'error': str(exc), 'o': None, 'survey_items': [], 'survey_start': 0, 'handle_brands': []}
+        return {'error': str(exc), 'o': None, 'survey_items': [], 'survey_start': 0, 'handle_brands': [], 'survey_status': ''}
 
 
 def ctx_products(u):
@@ -768,7 +770,7 @@ def api_import():
                 raise AppError('Invalid ' + key)
         from .core import filter_int
         sid = filter_int(data.get('salesman_id'))
-        sales = db.one("SELECT * FROM users WHERE id=%s AND role IN ('salesman','freelancer') AND active=1", [sid or 0])
+        sales = db.one("SELECT * FROM users WHERE id=%s AND role IN ('salesman','freelancer','fabricator') AND active=1", [sid or 0])
         if not sales:
             raise AppError('Active salesman or freelancer required')
         items = data.get('items')

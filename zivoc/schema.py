@@ -22,11 +22,13 @@ def apply_schema():
 
 def ensure_role_schema():
     role = db.one("SHOW COLUMNS FROM users LIKE 'role'")
-    if role and "'freelancer'" not in str(role['Type']):
-        db.q("ALTER TABLE users MODIFY role ENUM('admin','finance','salesman','freelancer') NOT NULL DEFAULT 'salesman'")
+    if role and "'fabricator'" not in str(role['Type']):
+        db.q("ALTER TABLE users MODIFY role ENUM('admin','finance','salesman','freelancer','fabricator') NOT NULL DEFAULT 'salesman'")
     source = db.one("SHOW COLUMNS FROM orders LIKE 'source'")
-    if source and "'freelancer'" not in str(source['Type']):
-        db.q("ALTER TABLE orders MODIFY source ENUM('salesman','admin','ecommerce','freelancer') NOT NULL")
+    if source and "'fabricator'" not in str(source['Type']):
+        db.q("ALTER TABLE orders MODIFY source ENUM('salesman','admin','ecommerce','freelancer','fabricator') NOT NULL")
+    if db.one("SHOW TABLES LIKE 'leads'") and not db.one("SHOW COLUMNS FROM leads LIKE 'erp_lead'"):
+        db.q("ALTER TABLE leads ADD COLUMN erp_lead VARCHAR(140) NULL")
 
 
 def hr_ensure():

@@ -11,7 +11,7 @@ from .core import hash_password
 
 
 DEFAULT_PASSWORD = 'Apple@123'
-ROLE_MAP = {'salesman': 'salesman', 'freelancer': 'freelancer', 'dsh-finance': 'finance', 'dsh-admin': 'admin'}
+ROLE_MAP = {'salesman': 'salesman', 'freelancer': 'freelancer', 'fabricator': 'fabricator', 'dsh-finance': 'finance', 'dsh-admin': 'admin'}
 _state = {'last': 0.0}
 _lock = threading.Lock()
 

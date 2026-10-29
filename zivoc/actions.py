@@ -187,7 +187,7 @@ def _user_update(u):
     require_admin(u)
     user_id = to_int(val('id'))
     record = db.one('SELECT * FROM users WHERE id=%s', [user_id])
-    if not record or record['role'] not in ('salesman', 'freelancer'):
+    if not record or record['role'] not in ('salesman', 'freelancer', 'fabricator'):
         raise AppError('Sales member unavailable.')
     scheme_id = to_int(val('commission_scheme_id')) or None
     rate = 0

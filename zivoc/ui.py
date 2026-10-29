@@ -53,7 +53,7 @@ def assignment(u):
         return Markup('')
     options = Markup('').join(
         Markup('<option value="%s">%s</option>') % (row['id'], '%s \u00b7 %s' % (row['name'], str(row['role']).capitalize()))
-        for row in db.rows("SELECT id,name,role FROM users WHERE role IN ('salesman','freelancer') AND active=1 ORDER BY name")
+        for row in db.rows("SELECT id,name,role FROM users WHERE role IN ('salesman','freelancer','fabricator') AND active=1 ORDER BY name")
     )
     return Markup('<label>Assign salesman / freelancer<select name="salesman_id" required><option value="">Select salesman or freelancer</option>%s</select></label>') % options
 

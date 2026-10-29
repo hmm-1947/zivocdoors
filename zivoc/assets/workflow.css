@@ -46,3 +46,6 @@
 .os-door.os-noframe .os-frame,.os-door.os-noframe .os-dash{display:none}
 .os-door.os-noframe .os-in1{stroke:#202127;stroke-width:1.5}
 .wf-line-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+.qt-dashboard{margin:0 0 28px}
+.qt-dashboard+.overview-grid{margin-top:0}

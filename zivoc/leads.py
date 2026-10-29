@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from . import db
 from .core import AppError
+from .erpleads import push_lead
 from .helpers import owner, privileged, required, salesman, to_int, val
 from .workflow import wf_date
 
@@ -65,6 +66,7 @@ def lead_create(u):
     db.q('INSERT INTO reminders(salesman_id,lead_id,title,due_at) VALUES (%s,%s,%s,%s)',
          [sid, lead_id, 'Lead follow-up: ' + data['name'], data['contact_date'] + ' 09:00:00'])
     db.commit()
+    push_lead(lead_id)
 
 
 def lead_update(u):
