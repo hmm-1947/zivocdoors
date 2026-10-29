@@ -416,6 +416,7 @@ def wf_action(action, u, transaction=True, initial=False):
                 db.q("UPDATE wf_surveys SET status='completed',revision=revision+1,updated_by=%s WHERE order_id=%s", [u['id'], oid])
                 wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
                 session['quote_to_list'] = 1
+                _wf_auto_quote(oid, u, order)
 
     elif action == 'wf_survey_review':
 
@@ -652,3 +653,33 @@ def _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_temp
     db.q("UPDATE orders SET stage='order' WHERE id=%s", [oid])
     wf_log(oid, u, 'quotation', 'Quotation #%s revision %s %s.' % (qid, version, 'created' if initial else 'submitted and sent'))
     session['quote_to_list'] = True
+
+
+def _wf_auto_quote(oid, u, order):
+    from .quotations import qt_customer_details, qt_quote_rows, qt_template_id
+    quote = db.one('SELECT * FROM wf_quotations WHERE order_id=%s', [oid])
+    if not quote:
+        return
+    survey = wf_survey(oid)
+    prices = {}
+    for line in db.rows('SELECT order_item_id,unit_price FROM wf_quotation_items WHERE quotation_id=%s ORDER BY id', [quote['id']]):
+        prices.setdefault(int(line['order_item_id']), line['unit_price'])
+    items = {int(item['id']): item for item in wf_items(oid)}
+    quote_items = {}
+    for row in qt_quote_rows(oid):
+        item_id = int(row['order_item_id'])
+        price = prices.get(item_id, items[item_id]['unit_price'] if item_id in items else 0)
+        quote_items[row['quote_key']] = {'quantity': row['quantity'], 'unit_price': price}
+    data = post()
+    data['order_id'] = oid
+    data['revision'] = int(quote['revision'])
+    data['quote_items'] = quote_items
+    data['discount_type'] = quote['discount_type'] or 'amount'
+    data['discount'] = quote['discount_value'] if quote['discount_type'] == 'percent' else quote['discount']
+    for key in ('tax_rate', 'installation', 'transport', 'additional', 'terms', 'payment_terms', 'delivery'):
+        data[key] = '' if quote[key] is None else quote[key]
+    data['quote_notes'] = quote['notes'] or ''
+    data['quote_date'] = str(quote['quote_date'])
+    data['valid_until'] = str(quote['valid_until'])
+    data['template_id'] = quote['template_id'] if quote['template_id'] else ''
+    _wf_quote(oid, u, order, survey, qt_customer_details, qt_quote_rows, qt_template_id, False)

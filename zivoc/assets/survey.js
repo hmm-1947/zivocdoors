@@ -67,7 +67,7 @@ unitBtns.forEach(b=>b.addEventListener('click',()=>{field(current,'unit').value=
 backBtn.addEventListener('click',()=>{if(current>0)go(current-1);});
 nextBtn.addEventListener('click',()=>{if(!done(current)){showError('Enter the top, bottom, left, right and inner measurements and the hinge position to continue.');return;}if(current<total-1)go(current+1);});
 pills.forEach((pill,i)=>pill.addEventListener('click',()=>{if(reachable(i))go(i);}));
-Object.values(inputs).forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(current<total-1&&done(current))go(current+1);else if(allDone())autoSubmit();}}));
+Object.values(inputs).forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(current<total-1&&done(current))go(current+1);}}));
 function buildBrands(){
  brandList.textContent='';
  if(!brands.length){const p=document.createElement('p');p.className='muted';p.textContent='No lock brands have been added yet. Ask an admin to add them in the Door handle list.';brandList.appendChild(p);return;}
@@ -90,19 +90,14 @@ dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
 const pending=root.dataset.status==='pending';
 let timer=null,saving=Promise.resolve(),submitted=false;
 function saveProgress(){
- if(!pending||submitted||allDone()||!pills.some((_,i)=>done(i)))return;
+ if(!pending||submitted||!pills.some((_,i)=>done(i)))return;
  const body=new URLSearchParams(new FormData(form));body.set('action','wf_survey_progress');
  saving=saving.then(()=>fetch(location.href,{method:'POST',body,credentials:'same-origin',redirect:'manual'})).catch(()=>{});
-}
-function autoSubmit(){
- if(!pending||submitted||!allDone())return;
- submitted=true;clearTimeout(timer);
- saving.then(()=>form.requestSubmit());
 }
 function schedule(){
  if(!pending||submitted)return;
  clearTimeout(timer);
- timer=setTimeout(()=>{if(allDone())autoSubmit();else saveProgress();},1500);
+ timer=setTimeout(()=>{saveProgress();},1500);
 }
 root.addEventListener('input',schedule);
 root.addEventListener('change',schedule);
