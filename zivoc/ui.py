@@ -23,6 +23,8 @@ ICON_PATHS = {
     'check': 'm5 12 4 4L19 6',
     'pin': 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
     'calendar': 'M3 6h18v15H3ZM3 10h18M8 3v5M16 3v5',
+    'file': 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8ZM14 3v5h5M9 13h6M9 17h4',
+    'cart': 'M3 4h2l2.4 11h10.2L20 7H6M9 20h.01M17 20h.01',
     'wallet': 'M3 5h17v16H3ZM3 5V3h14M15 11h6v5h-6Z',
 }
 

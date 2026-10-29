@@ -82,21 +82,31 @@ def ctx_home(u, all_access, reminders):
     punch = db.one('SELECT * FROM attendance WHERE user_id=%s AND day=%s', [u['id'], today()])
     lead_scope = where
     quote_scope = '1=1' if all_access else 'o.salesman_id=%d' % int(u['id'])
-    monthly_leads = int(db.one('SELECT COUNT(*) n FROM leads WHERE ' + lead_scope + ' AND created_at>=%s AND created_at<%s', [first, nxt])['n'])
-    total_leads = int(db.one('SELECT COUNT(*) n FROM leads WHERE ' + lead_scope)['n'])
-    stats = db.one(
-        "SELECT COUNT(*) total,COALESCE(SUM(q.quote_date>=%s AND q.quote_date<%s),0) monthly,COALESCE(SUM(q.status='approved'),0) won,"
-        "COALESCE(SUM(q.status='approved' AND q.quote_date>=%s AND q.quote_date<%s),0) monthly_won "
-        'FROM wf_quotations q JOIN orders o ON o.id=q.order_id WHERE ' + quote_scope, [first, nxt, first, nxt])
-    confirmed = db.one("SELECT COUNT(*) total,COALESCE(SUM(created_at>=%s AND created_at<%s),0) monthly FROM orders WHERE " + lead_scope + " AND stage='production'",
-                       [first, nxt])
-    quote_total, quote_monthly = int(stats['total']), int(stats['monthly'])
-    success_monthly = php_round(100 * int(stats['monthly_won']) / quote_monthly, 2) if quote_monthly else 0
-    success_total = php_round(100 * int(stats['won']) / quote_total, 2) if quote_total else 0
-    dashboard = [
-        ('Monthly leads', monthly_leads), ('Total leads', total_leads), ('Monthly quotations', quote_monthly), ('Total quotations', quote_total),
-        ('Monthly production orders', int(confirmed['monthly'])), ('Total production orders', int(confirmed['total'])),
-        ('Monthly quotation success', fnum(float(success_monthly)) + '%'), ('Total quotation success', fnum(float(success_total)) + '%'),
+    try:
+        ov_from = wf_date(request.args['ov_from']) if request.args.get('ov_from') else first
+    except AppError:
+        ov_from = first
+    try:
+        ov_to = wf_date(request.args['ov_to']) if request.args.get('ov_to') else today()
+    except AppError:
+        ov_to = today()
+    if ov_from > ov_to:
+        ov_from, ov_to = ov_to, ov_from
+    ov_end = add_days(ov_to, 1)
+    span = [ov_from, ov_end]
+    lead_count = int(db.one('SELECT COUNT(*) n FROM leads WHERE ' + lead_scope + ' AND created_at>=%s AND created_at<%s', span)['n'])
+    quote_count = int(db.one('SELECT COUNT(*) n FROM wf_quotations q JOIN orders o ON o.id=q.order_id WHERE ' + quote_scope +
+                             ' AND q.quote_date>=%s AND q.quote_date<%s', span)['n'])
+    order_received = int(db.one('SELECT COUNT(*) n FROM orders WHERE ' + lead_scope + ' AND created_at>=%s AND created_at<%s', span)['n'])
+    order_done = int(db.one(
+        "SELECT COUNT(*) n FROM (SELECT o.id,MIN(h.created_at) done FROM orders o JOIN order_history h ON h.order_id=o.id AND h.stage='production' "
+        "WHERE " + quote_scope + " AND o.stage='production' GROUP BY o.id) t WHERE t.done>=%s AND t.done<%s", span)['n'])
+    ov_label = php_date('d M Y', ov_from) + ' – ' + php_date('d M Y', ov_to)
+    overview = [
+        {'tone': 'leads', 'icon': 'leads', 'value': lead_count, 'label': 'Leads', 'href': '?page=leads', 'sub': ''},
+        {'tone': 'quote', 'icon': 'file', 'value': quote_count, 'label': 'Quotation', 'href': '?page=quotations', 'sub': ''},
+        {'tone': 'sales', 'icon': 'chart', 'value': order_done, 'label': 'Sales', 'href': '?page=orders&stage=production', 'sub': ''},
+        {'tone': 'orders', 'icon': 'cart', 'value': order_received, 'label': 'Orders', 'href': '?page=orders', 'sub': '%d completed' % order_done},
     ]
     schedule_day = request.args.get('schedule_day', today())
     try:
@@ -109,7 +119,7 @@ def ctx_home(u, all_access, reminders):
         'LEFT JOIN leads l ON l.id=r.lead_id LEFT JOIN wf_quotations q ON q.order_id=o.id WHERE ' +
         ('1=1' if all_access else 'r.salesman_id=%d' % int(u['id'])) + ' AND r.due_at>=%s AND r.due_at<%s ORDER BY r.due_at', [schedule_day, schedule_end])
     return {
-        'approved': approved, 'earned': earned, 'target': target, 'pct': pct, 'punch': punch, 'dashboard': dashboard,
+        'approved': approved, 'earned': earned, 'target': target, 'pct': pct, 'punch': punch, 'overview': overview, 'ov_from': ov_from, 'ov_to': ov_to, 'ov_label': ov_label, 'ov_custom': bool(request.args.get('ov_from') or request.args.get('ov_to')),
         'schedule_day': schedule_day, 'schedules': schedules,
         'new_leads': db.one("SELECT COUNT(*) n FROM leads WHERE " + where + " AND status='new'")['n'],
         'in_review': db.one("SELECT COUNT(*) n FROM orders WHERE " + where + " AND stage='finance'")['n'],

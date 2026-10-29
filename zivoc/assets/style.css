@@ -123,3 +123,29 @@ button,.button,.sidebar nav a{min-height:44px}
 .install-btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:0;background:#4f1fe0;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .install-btn[hidden]{display:none}
 .login-install{position:fixed;top:12px;right:12px;z-index:20}
+.ov-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;position:relative}
+.ov-range{margin:0;font-size:13px;font-weight:600;color:var(--muted)}
+.ov-cal{position:relative;margin-left:auto}
+.ov-cal summary{list-style:none;cursor:pointer;border:1px solid #dedce7;box-shadow:0 4px 12px #4f1fe014}
+.ov-cal summary::-webkit-details-marker{display:none}
+.ov-cal summary svg{width:22px;height:22px}
+.ov-pop{position:absolute;right:0;top:56px;z-index:30;width:260px;display:grid;gap:12px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 34px #2a1a6a26}
+.ov-pop label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
+.ov-pop input{width:100%}
+.ov-pop a{text-align:center;font-size:13px;font-weight:600}
+.ov-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ov-card{position:relative;display:flex;flex-direction:column;min-height:196px;padding:18px 18px 16px;border-radius:24px;background:#fff;color:var(--ink);overflow:hidden;box-shadow:0 8px 24px #4f1fe012;border:1px solid #fff}
+.ov-card::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-26px;height:64px;border-radius:50% 50% 0 0;background:var(--ov-soft);opacity:.7;pointer-events:none}
+.ov-card>*{position:relative;z-index:1}
+.ov-icon{display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:var(--ov-soft);color:var(--ov)}
+.ov-icon svg{width:28px;height:28px}
+.ov-card strong{margin-top:14px;font-size:44px;line-height:1;font-weight:800;color:var(--ov)}
+.ov-label{margin-top:8px;font-size:15px;font-weight:700}
+.ov-card em{margin-top:2px;font-style:normal;font-size:12px;font-weight:600;color:var(--muted)}
+.ov-go{position:absolute;right:16px;bottom:16px;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#efe9ff;color:#4f1fe0}
+.ov-go svg{width:16px;height:16px}
+.ov-card.leads{--ov:#4f1fe0;--ov-soft:#ede7ff}
+.ov-card.quote{--ov:#1d5fe0;--ov-soft:#e3efff}
+.ov-card.sales{--ov:#12963f;--ov-soft:#dff6e7}
+.ov-card.orders{--ov:#e8650c;--ov-soft:#ffeadb}
+@media(min-width:900px){.ov-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}}
