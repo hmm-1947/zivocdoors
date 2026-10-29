@@ -365,6 +365,9 @@ def handle_post():
     to_list = session.pop('quote_to_list', None)
     created = session.pop('quote_created_order', None)
     go_orders = session.pop('go_orders', None)
+    back_to_order = session.pop('back_to_order', None)
+    if back_to_order and 'error' not in session:
+        return redirect_response('/?page=quotation_create&id=%d&view=order' % int(back_to_order))
     if go_orders and 'error' not in session:
         return redirect_response('/?page=orders')
     if to_list and 'error' not in session:
@@ -390,6 +393,10 @@ def handle_post():
     target = '/?page=' + page + context
     if 'id' in request.args:
         target += '&id=%d' % to_int(request.args.get('id'))
+    if request.args.get('from') == 'order' and page in ('survey', 'quotation_create'):
+        target += '&from=order' if page == 'survey' else '&view=order'
+    if request.args.get('item') and page == 'survey':
+        target += '&item=%d' % to_int(request.args.get('item'))
     return redirect_response(target)
 
 

@@ -1,6 +1,6 @@
 'use strict';
 const qtForm=document.querySelector('.qt-create');
-if(qtForm){
+if(qtForm&&!qtForm.hasAttribute('data-order')){
  const $=id=>document.getElementById(id);
  const code=$('qt-item-code'),itemName=$('qt-item-name'),itemQty=$('qt-item-qty'),itemPrice=$('qt-item-price'),message=$('qt-item-message'),rows=$('qt-product-rows');
  const discPer=$('qt-disc-per'),discAmt=$('qt-disc-amt'),discHidden=$('qt-discount');
@@ -101,8 +101,26 @@ if(qtForm){
  discAmt.value=money(number(discHidden.value));
  refresh();
 }
+if(qtForm&&qtForm.hasAttribute('data-order')){
+ const num=value=>Number(value)||0,fmt=value=>(Math.round(value*100)/100).toFixed(2),$=id=>document.getElementById(id);
+ let qty=0,subtotal=0,index=0;
+ $('qt-product-rows').querySelectorAll('tr').forEach(row=>{
+  index++;
+  const q=num(row.querySelector('[name$="[quantity]"]').value),p=num(row.querySelector('[name$="[unit_price]"]').value);
+  qty+=q;subtotal+=q*p;
+  row.querySelector('[data-qt-sl]').textContent=index;
+  row.querySelector('[data-qt-line-total]').textContent=fmt(q*p);
+ });
+ const discount=Math.max(0,num($('qt-discount').value));
+ $('qt-total-qty').value=qty;$('qt-subtotal').value=fmt(subtotal);$('qt-disc-amt').value=fmt(discount);
+ $('qt-disc-per').value=subtotal>0?String(Math.round(discount/subtotal*10000)/100):'0';
+ $('qt-grand').value=fmt(Math.max(0,subtotal-discount));
+ const lock=()=>qtForm.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=true;});
+ lock();
+ window.addEventListener('load',()=>{lock();setTimeout(lock,300);});
+}
 document.querySelectorAll('[data-qt-template]').forEach(select=>select.addEventListener('change',()=>{if(select.value)select.form.elements.terms.value=select.selectedOptions[0].dataset.terms||'';}));
-if(qtForm&&qtForm.hasAttribute('data-edit')){
+if(qtForm&&(qtForm.hasAttribute('data-edit')||qtForm.hasAttribute('data-prefill'))){
  setTimeout(()=>{
   const existing=document.getElementById('party-existing'),franchise=document.getElementById('party-franchise'),lead=document.getElementById('party-lead-id');
   if(existing){existing.required=false;if(lead&&lead.value&&[...existing.options].some(o=>o.value===lead.value))existing.value=lead.value;}

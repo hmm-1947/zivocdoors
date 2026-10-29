@@ -27,11 +27,11 @@ def lead_number(row):
 
 def insert_lead(sid, data):
     day = data.get('lead_date') or str(db.one('SELECT CURRENT_DATE d')['d'])
-    db.q('INSERT INTO leads(salesman_id,name,phone,address,address2,postal_code,post_office,state,district,notes,lead_date,customer_type,contact_date,stage) '
-         'VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+    db.q('INSERT INTO leads(salesman_id,name,phone,address,address2,postal_code,post_office,state,district,notes,lead_date,customer_type,contact_date,stage,gst_number) '
+         'VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
          [sid, data['name'], data['phone'], data.get('address', ''), data.get('address2', ''), data.get('postal_code', ''), data.get('post_office', ''),
           data.get('state', ''), data.get('district', ''), data.get('notes', ''), day, data.get('customer_type', 'new'), data.get('contact_date') or None,
-          data.get('stage', 'Lead')])
+          data.get('stage', 'Lead'), data.get('gst_number', '')])
     lead_id = int(db.insert_id())
     db.q('UPDATE leads SET lead_no=%s WHERE id=%s', ['%s-LEAD-%04d' % (financial_year(day), lead_id), lead_id])
     return lead_id
@@ -55,6 +55,7 @@ def _form():
         'state': val('state', 100),
         'district': val('district', 100),
         'notes': val('remark', 3000),
+        'gst_number': val('gst_number', 20),
     }
 
 
@@ -76,16 +77,16 @@ def lead_update(u):
     if stage not in LEAD_STAGES:
         raise AppError('Invalid lead status.')
     db.q('UPDATE leads SET name=%s,phone=%s,address=%s,address2=%s,postal_code=%s,post_office=%s,state=%s,district=%s,notes=%s,lead_date=%s,'
-         'customer_type=%s,contact_date=%s,stage=%s,status_remark=%s WHERE id=%s',
+         'customer_type=%s,contact_date=%s,stage=%s,status_remark=%s,gst_number=%s WHERE id=%s',
          [data['name'], data['phone'], data['address'], data['address2'], data['postal_code'], data['post_office'], data['state'], data['district'],
-          data['notes'], data['lead_date'], data['customer_type'], data['contact_date'], stage, val('status_remark', 3000), record['id']])
+          data['notes'], data['lead_date'], data['customer_type'], data['contact_date'], stage, val('status_remark', 3000), data['gst_number'], record['id']])
 
 
 def lead_form_values(row):
     out = {
         'lead_date': row['lead_date'], 'customer_type': row['customer_type'], 'name': row['name'], 'phone': row['phone'], 'address1': row['address'],
         'address2': row['address2'], 'postal_code': row['postal_code'], 'post_office': row['post_office'], 'state': row['state'], 'district': row['district'],
-        'remark': row['notes'], 'contact_date': row['contact_date'], 'stage': row['stage'], 'status_remark': row['status_remark'],
+        'remark': row['notes'], 'contact_date': row['contact_date'], 'stage': row['stage'], 'status_remark': row['status_remark'], 'gst_number': row.get('gst_number'),
     }
     return {key: ('' if value is None else str(value)) for key, value in out.items()}
 

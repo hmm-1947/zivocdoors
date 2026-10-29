@@ -182,6 +182,11 @@ def deletion_ensure():
     ensure_log_table()
 
 
+def lead_gst_ensure():
+    if not db.one("SHOW COLUMNS FROM leads LIKE 'gst_number'"):
+        db.q('ALTER TABLE leads ADD COLUMN gst_number VARCHAR(20) NULL')
+
+
 def notify_ensure():
     if not db.one("SHOW COLUMNS FROM reminders LIKE 'created_at'"):
         db.q('ALTER TABLE reminders ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP')
@@ -204,6 +209,7 @@ def ensure_all():
         survey_ensure()
         brand_image_ensure()
         lead_ensure()
+        lead_gst_ensure()
         team_ensure()
         commission_ensure()
         avatar_ensure()

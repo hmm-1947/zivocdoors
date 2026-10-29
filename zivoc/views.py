@@ -216,21 +216,12 @@ def ctx_order(u, all_access):
     except AppError:
         return {'o': None}
     oid = int(o['id'])
-    display = {'finance': 'Finance review', 'production': 'In production'} if o['stage'] in ('finance', 'verified', 'production') else STAGES
-    keys = list(display.keys())
-    current = 'finance' if o['stage'] == 'verified' else o['stage']
-    idx = keys.index(current) if current in keys else -1
-    wf = wf_survey(oid)
-    ctx = {
-        'o': o, 'display_stages': list(display.items()), 'stage_idx': idx, 'next_stage': next_stage(o['stage']), 'wf': wf,
-        'items': db.rows('SELECT i.*,p.name FROM order_items i JOIN products p ON p.id=i.product_id WHERE order_id=%s', [oid]),
-        'history': db.rows('SELECT h.*,u.name FROM order_history h JOIN users u ON u.id=h.actor_id WHERE order_id=%s ORDER BY h.id DESC', [oid]),
-        'wf_ready': False, 'w': None,
+    quote = db.one('SELECT * FROM wf_quotations WHERE order_id=%s', [oid])
+    return {
+        'o': o, 'quote': quote, 'q_details': json_obj(quote.get('customer_details')) if quote else {},
+        'quote_history': db.rows('SELECT revision,created_at FROM wf_quotation_revisions WHERE quotation_id=%s ORDER BY revision DESC', [quote['id']]) if quote else [],
+        'quote_status': wf_quote_status(quote) if quote else None,
     }
-    if wf:
-        ctx['wf_ready'] = wf_ready(oid)
-        ctx['w'] = ctx_workflow(u, o, wf)
-    return ctx
 
 
 def ctx_workflow(u, o, wf):
@@ -412,14 +403,29 @@ def ctx_quotation_create(u, all_access):
         'people': party_people(u), 'edit': None, 'edit_error': None, 'now_local': now().strftime('%Y-%m-%dT%H:%M'),
         'templates': db.rows('SELECT * FROM qt_templates WHERE active=1 ORDER BY title'),
     }
+    ctx['order_view'] = False
     edit_id = to_int(request.args.get('id', 0))
     if edit_id:
         try:
             edit = qt_edit_data(u, edit_id)
             ctx['edit'] = edit
             ctx['old'] = edit['old']
+            ctx['order_view'] = request.args.get('view') == 'order'
         except AppError as exc:
             ctx['edit_error'] = str(exc)
+    elif request.args.get('lead_id') and not ctx['old']:
+        try:
+            lead = owner('leads', to_int(request.args.get('lead_id')), u)
+            values = lead_form_values(lead)
+            ctx['old'] = {
+                'customer_type': 'franchise' if lead['customer_type'] == 'franchise' else 'existing', 'lead_id': str(lead['id']),
+                'customer': values['name'], 'phone': values['phone'], 'address1': values['address1'], 'address2': values['address2'],
+                'postal_code': values['postal_code'], 'post_office': values['post_office'], 'state': values['state'],
+                'district': values['district'], 'contact_date': values['contact_date'],
+            }
+            ctx['prefill'] = True
+        except AppError:
+            pass
     return ctx
 
 

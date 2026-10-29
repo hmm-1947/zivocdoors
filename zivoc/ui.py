@@ -27,6 +27,7 @@ ICON_PATHS = {
     'cart': 'M3 4h2l2.4 11h10.2L20 7H6M9 20h.01M17 20h.01',
     'survey': 'M9 4h6v3H9ZM7 5H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-1M9 12h6M9 16h4',
     'wallet': 'M3 5h17v16H3ZM3 5V3h14M15 11h6v5h-6Z',
+    'quote': 'M10 7H6.5A1.5 1.5 0 0 0 5 8.5V12a1.5 1.5 0 0 0 1.5 1.5H10ZM10 13.5V16a2.5 2.5 0 0 1-2.5 2.5M19 7h-3.5A1.5 1.5 0 0 0 14 8.5V12a1.5 1.5 0 0 0 1.5 1.5H19ZM19 13.5V16a2.5 2.5 0 0 1-2.5 2.5',
 }
 
 
@@ -118,10 +119,13 @@ def date_pills(page, keep, f_from, f_to):
         active = current == (start, end)
         matched = matched or active
         out.append(Markup('<a class="dp-pill%s" href="%s">%s</a>') % (' active' if active else '', href(start, end), label))
-    custom = not matched and current[0] != '' and current[0] == current[1]
-    out.append(Markup('<span class="dp-cal-wrap"><button type="button" class="dp-cal%s" data-dp-cal aria-label="Pick a date" title="Pick a date">%s</button>'
-                      '<input type="date" class="dp-cal-input" tabindex="-1" aria-hidden="true" value="%s" data-dp-base="%s"></span>') % (
-        ' active' if custom else '', icon('calendar'), current[0] if custom else '', href('__D__', '__D__')))
+    custom = not matched and current[0] != ''
+    hidden = Markup('').join(Markup('<input type="hidden" name="%s" value="%s">') % (key, value) for key, value in [('page', page)] + list(base.items()))
+    out.append(Markup('<details class="ov-cal dp-range"><summary class="round%s" aria-label="Select date range">%s</summary>'
+                      '<form method="get" class="ov-pop">%s<label>From<input type="date" name="from" value="%s" required></label>'
+                      '<label>To<input type="date" name="to" value="%s" required></label><button class="button" type="submit">Apply</button>'
+                      '<a href="%s">Clear</a></form></details>') % (
+        ' dp-on' if custom else '', icon('calendar'), hidden, current[0], current[1], href('', '')))
     return Markup('<div class="dp-bar" role="group" aria-label="Date filter">%s</div>') % Markup('').join(out)
 
 

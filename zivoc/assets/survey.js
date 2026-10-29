@@ -45,7 +45,7 @@ function refresh(){
  frameBtns.forEach(b=>b.classList.toggle('active',b.dataset.svFrame===fm));
  unitBtns.forEach(b=>b.classList.toggle('active',b.dataset.svUnitBtn===un));
  unitLabels.forEach(s=>{s.textContent=un;});
- if(last&&!allDone())hintEl.textContent='Every item needs the top, bottom, left, right and inner measurements and a hinge position before you can submit.';
+ if(last&&!allDone())hintEl.textContent='Every item needs the top, bottom, left, right and center measurements and a hinge position before you can submit.';
  else hintEl.textContent=defaultHint;
  refreshBrand();
 }
@@ -65,7 +65,7 @@ radios.forEach(r=>r.addEventListener('change',()=>{if(r.checked){field(current,'
 frameBtns.forEach(b=>b.addEventListener('click',()=>{field(current,'frame').value=b.dataset.svFrame;refresh();}));
 unitBtns.forEach(b=>b.addEventListener('click',()=>{field(current,'unit').value=b.dataset.svUnitBtn;render();}));
 backBtn.addEventListener('click',()=>{if(current>0)go(current-1);});
-nextBtn.addEventListener('click',()=>{if(!done(current)){showError('Enter the top, bottom, left, right and inner measurements and the hinge position to continue.');return;}if(current<total-1)go(current+1);});
+nextBtn.addEventListener('click',()=>{if(!done(current)){showError('Enter the top, bottom, left, right and center measurements and the hinge position to continue.');return;}if(current<total-1)go(current+1);});
 pills.forEach((pill,i)=>pill.addEventListener('click',()=>{if(reachable(i))go(i);}));
 Object.values(inputs).forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(current<total-1&&done(current))go(current+1);}}));
 function buildBrands(){
@@ -107,7 +107,7 @@ form.addEventListener('submit',event=>{
  event.preventDefault();
  const index=firstIncomplete();
  go(index);
- showError('Complete the top, bottom, left, right and inner measurements and the hinge position for this item before submitting.');
+ showError('Complete the top, bottom, left, right and center measurements and the hinge position for this item before submitting.');
 });
 if(!reachable(current))current=Math.max(firstIncomplete(),0);
 render();

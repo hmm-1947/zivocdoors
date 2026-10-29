@@ -1,6 +1,6 @@
-<a class="back" href="{{ ('?page=quotation_create&id=%d' % o['id']) if o else '?page=orders' }}">← Back to quotation</a>
+<a class="back" href="{{ (('?page=quotation_create&id=%d&view=order' if request.args.get('from') == 'order' else '?page=quotation_create&id=%d') % o['id']) if o else '?page=orders' }}">← Back to {{ 'order' if request.args.get('from') == 'order' else 'quotation' }}</a>
 {% if error %}<p class="notice error">{{ error }}</p>{% else %}
-<div class="page-heading"><div><span class="eyebrow">ORDER #{{ '%04d' % o['id'] }} · SURVEY</span><h1>Door survey</h1><p class="muted">{{ o['customer'] }} · enter the four side measurements, the inner measurement and the hinge position for each item.</p></div></div>
+<div class="page-heading"><div><span class="eyebrow">ORDER #{{ '%04d' % o['id'] }} · SURVEY</span><h1>Door survey</h1><p class="muted">{{ o['customer'] }} · enter the four side measurements, the center measurement and the hinge position for each item.</p></div></div>
 {{ start_form('wf_survey_submit', 'sv-form') }}<input type="hidden" name="order_id" value="{{ o['id'] }}">
 {% for it in survey_items %}{% set ix = loop.index0 %}{% for fld in ('top', 'bottom', 'left', 'right', 'inner', 'hinge', 'frame', 'unit') %}<input type="hidden" name="survey[{{ it['id'] }}][{{ fld }}]" value="{{ it[fld] }}" data-sv-field="{{ fld }}" data-index="{{ ix }}">{% endfor %}<input type="hidden" name="survey[{{ it['id'] }}][brand_id]" value="{{ it['brand_id'] }}" data-sv-field="brand_id" data-index="{{ ix }}">{% endfor %}
 <section class="card sv-card" data-sv data-status="{{ survey_status }}" data-start="{{ survey_start }}" data-brands="{{ handle_brands|tojson|forceescape }}">
@@ -12,7 +12,7 @@
 <label class="sv-side sv-bottom">Bottom (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 90" data-sv-input="bottom"></label>
 <label class="sv-side sv-left">Left (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="left"></label>
 <label class="sv-side sv-right">Right (<span data-sv-unit>cm</span>)<input type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 210" data-sv-input="right"></label>
-<label class="sv-side sv-inner">Inner<input type="text" autocomplete="off" maxlength="80" placeholder="Inner size" data-sv-input="inner"></label>
+<label class="sv-side sv-inner">Center<input type="text" autocomplete="off" maxlength="80" placeholder="Center size" data-sv-input="inner"></label>
 <svg class="sv-door" viewBox="0 30 300 430" role="img" aria-label="Door frame technical drawing" data-hinge="">
 <defs><pattern id="sv-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a90a0" stroke-width="1"/></pattern></defs>
 <path class="sv-frame" d="M20 40 H280 V450 H270 V50 H30 V450 H20 Z" fill="url(#sv-hatch)" stroke="#202127" stroke-width="1.8" stroke-linejoin="miter"/>

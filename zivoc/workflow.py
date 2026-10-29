@@ -2,7 +2,7 @@ import json
 import re
 import secrets
 
-from flask import session
+from flask import request, session
 
 from . import config, db
 from .core import AppError, add_days, files, filter_int, is_numeric, now, php_date, php_round, post, today, ucwords, utf8_len
@@ -300,7 +300,7 @@ def _survey_entries(raw, items, strict):
                 raise AppError('Enter the top, bottom, left and right measurements (0.01 to 2000 cm) for every item.')
             inner = wf_text(row.get('inner', ''), 80)
             if inner == '':
-                raise AppError('Enter the inner measurement for every item.')
+                raise AppError('Enter the center measurement for every item.')
             brand_id = filter_int(row.get('brand_id', 0)) or 0
             brand = None
             if brand_id:
@@ -417,6 +417,9 @@ def wf_action(action, u, transaction=True, initial=False):
                 wf_log(oid, u, 'survey', 'Survey submitted for %d item(s).' % len(entries))
                 session['quote_to_list'] = 1
                 _wf_auto_quote(oid, u, order)
+                if request.args.get('from') == 'order':
+                    session.pop('quote_to_list', None)
+                    session['back_to_order'] = oid
 
     elif action == 'wf_survey_review':
 
