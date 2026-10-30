@@ -237,6 +237,11 @@ def qt_filter(data, u):
     elif stage in LEAD_STAGES:
         where.append("o.stage<>'production' AND COALESCE(l.stage,'Quotation')=%s")
         params.append(stage)
+    surveys = data.getlist('survey') if hasattr(data, 'getlist') else ([data.get('survey')] if data.get('survey') else [])
+    surveys = [wf_text(s, 30) for s in surveys if s]
+    if surveys:
+        where.append("COALESCE((SELECT sv.status FROM wf_surveys sv WHERE sv.order_id=q.order_id),'pending') IN (%s)" % ','.join(['%s'] * len(surveys)))
+        params.extend(surveys)
     search = wf_text(data.get('search', ''), 150)
     if search != '':
         where.append('(o.customer LIKE %s OR o.phone LIKE %s OR CAST(q.id AS CHAR) LIKE %s)')

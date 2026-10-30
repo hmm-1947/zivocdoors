@@ -102,7 +102,7 @@ def date_pills(page, keep, f_from, f_to):
     monday = day - timedelta(days=day.weekday())
     ranges = (('All', '', ''), ('Today', today, today), ('This week', monday.isoformat(), (monday + timedelta(days=6)).isoformat()),
               ('Last 7 days', (day - timedelta(days=6)).isoformat(), today))
-    base = {key: value for key, value in (keep or {}).items() if value not in (None, '') and key not in ('from', 'to', 'page', 'offset', 'p')}
+    base = {key: value for key, value in (keep or {}).items() if value not in (None, '', []) and key not in ('from', 'to', 'page', 'offset', 'p')}
 
     def href(start, end):
         query = {'page': page}
@@ -110,7 +110,7 @@ def date_pills(page, keep, f_from, f_to):
         if start:
             query['from'] = start
             query['to'] = end
-        return '?' + urlencode(query)
+        return '?' + urlencode(query, doseq=True)
 
     current = (f_from or '', f_to or '')
     out = []
@@ -120,7 +120,7 @@ def date_pills(page, keep, f_from, f_to):
         matched = matched or active
         out.append(Markup('<a class="dp-pill%s" href="%s">%s</a>') % (' active' if active else '', href(start, end), label))
     custom = not matched and current[0] != ''
-    hidden = Markup('').join(Markup('<input type="hidden" name="%s" value="%s">') % (key, value) for key, value in [('page', page)] + list(base.items()))
+    hidden = Markup('').join(Markup('<input type="hidden" name="%s" value="%s">') % (key, item) for key, value in [('page', page)] + list(base.items()) for item in (value if isinstance(value, (list, tuple)) else [value]))
     out.append(Markup('<details class="ov-cal dp-range"><summary class="round%s" aria-label="Select date range">%s</summary>'
                       '<form method="get" class="ov-pop">%s<label>From<input type="date" name="from" value="%s" required></label>'
                       '<label>To<input type="date" name="to" value="%s" required></label><button class="button" type="submit">Apply</button>'

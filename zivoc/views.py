@@ -26,7 +26,7 @@ from .workflow import (WF_MEASURES, wf_can_edit, wf_date, wf_items, wf_label, wf
 
 ALLOWED_PAGES = ('home', 'leads', 'lead_create', 'orders', 'order', 'products', 'profile', 'team', 'attendance', 'commissions', 'reminders', 'checkout',
                  'calendar', 'salary', 'quotations', 'quotation_create', 'quote_templates', 'survey', 'order_forms', 'door_handles', 'commission_schemes', 'deletion_logs')
-NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'My Orders'), ('quotations', 'Quotation Details'),
+NAV = (('home', 'Overview'), ('leads', 'Leads'), ('orders', 'My Orders'), ('quotations', 'Quotation'),
        ('products', 'Products'), ('reminders', 'Follow-ups'), ('attendance', 'Attendance'), ('salary', 'Salary & advances'), ('commissions', 'Wallet'))
 FREELANCER_HIDDEN = ('attendance', 'calendar')
 BOTTOM_NAV = (('home', 'Home'), ('leads', 'Leads'), ('quotation_create', 'Quotation'), ('orders', 'My Orders'), ('commissions', 'Wallet'))
@@ -166,12 +166,13 @@ def ctx_orders(u, all_access):
     if date_to:
         where.append('o.created_at<%s')
         params.append(add_days(date_to, 1))
-    stage = args.get('stage', '')
-    if stage not in STAGES:
-        stage = ''
+    stage = []
+    for value in args.getlist('stage'):
+        if value in STAGES and value not in stage:
+            stage.append(value)
     if stage:
-        where.append('o.stage=%s')
-        params.append(stage)
+        where.append('o.stage IN (%s)' % ','.join(['%s'] * len(stage)))
+        params.extend(stage)
     search = args.get('search', '').strip()[:100]
     if search:
         where.append('(o.customer LIKE %s OR o.phone LIKE %s OR CAST(o.id AS CHAR) LIKE %s OR u.name LIKE %s)')
@@ -204,7 +205,7 @@ def ctx_orders(u, all_access):
     return {
         'request_lead': lead_id, 'orders': orders, 'f_from': date_from, 'f_to': date_to, 'f_stage': stage, 'f_search': search, 'f_limit': limit,
         'o_count': count, 'o_amount': float(count_row['amount']), 'o_qty': float(qty_row['qty']), 'o_page': page_no, 'o_pages': pages,
-        'o_offset': offset, 'o_query': urlencode(keep), 'o_range': bool(date_from or date_to),
+        'o_offset': offset, 'o_query': urlencode(keep, doseq=True), 'o_range': bool(date_from or date_to),
     }
 
 
@@ -480,6 +481,13 @@ def ctx_quotations(u):
         row['effective'] = wf_quote_status(row)
         row['display_status'] = 'Converted' if (row['stage'] == 'production' or row.get('converted_at')) else ('Revised' if row['effective'] == 'revised' else (row.get('lead_stage') or 'Quotation'))
     keep = {key: request.args[key] for key in ('from', 'to', 'customer', 'stage', 'status', 'search', 'customer_type') if request.args.get(key)}
+    surveys = []
+    for value in request.args.getlist('survey'):
+        if value and value not in surveys:
+            surveys.append(value)
+    if surveys:
+        keep['survey'] = surveys
+    survey_opts = ['pending'] + [r['s'] for r in db.rows("SELECT DISTINCT sv.status s FROM wf_quotations q JOIN wf_surveys sv ON sv.order_id=q.order_id WHERE sv.status IS NOT NULL AND sv.status<>'pending' ORDER BY sv.status")]
     limit = request.args.get('limit', '100')
     if limit not in ('100', '250', '500', '1000', 'All'):
         limit = '100'
@@ -489,8 +497,8 @@ def ctx_quotations(u):
     page_no = min(max(1, to_int(request.args.get('p', 1), 1)), pages)
     offset = (page_no - 1) * size
     return {
-        'listing': listing[offset:offset + size], 'listing_error': error, 'export_query': urlencode(keep), 'q_count': count, 'q_page': page_no,
-        'q_pages': pages, 'q_offset': offset, 'q_limit': limit, 'q_keep': keep, 'q_query': urlencode(dict(keep, limit=limit)),
+        'listing': listing[offset:offset + size], 'listing_error': error, 'export_query': urlencode(keep, doseq=True), 'q_count': count, 'q_page': page_no,
+        'q_pages': pages, 'q_offset': offset, 'q_limit': limit, 'q_keep': keep, 'q_query': urlencode(dict(keep, limit=limit), doseq=True), 'survey_opts': survey_opts, 'f_survey': surveys,
         'q_amount': sum(float(row['grand_total']) for row in listing), 'q_qty': sum(float(row['total_quantity']) for row in listing),
         'q_range': bool(keep.get('from') or keep.get('to')),
     }
