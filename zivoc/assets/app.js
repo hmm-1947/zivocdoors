@@ -30,21 +30,6 @@ if (locationButton) {
  });
 }
 // Poll in-app reminders while signed in; no background notification service is required.
-if(document.querySelector('.bottom-nav')) {
- const shown=new Set();
- async function checkReminders(){
-  try {
-   const response=await fetch('/reminders',{headers:{Accept:'application/json'}});
-   if(!response.ok)return;const data=await response.json();
-   const fresh=data.filter(item=>!shown.has(item.id));
-   if(!fresh.length)return;fresh.forEach(item=>shown.add(item.id));
-   let box=document.getElementById('live-reminder');
-   if(!box){box=document.createElement('div');box.id='live-reminder';box.className='notice';box.setAttribute('role','status');document.querySelector('.shell main').prepend(box);}
-   box.replaceChildren();const link=document.createElement('a');link.href='?page=reminders';link.textContent=`${data.length} follow-up${data.length===1?'':'s'} due · ${fresh[0].title} →`;box.append(link);
-  }catch(error){/* A later poll retries temporary connection failures. */}
- }
- checkReminders();setInterval(checkReminders,60000);
-}
 
 const leadSelect=document.getElementById('order-lead');
 if(leadSelect){
@@ -165,3 +150,69 @@ setInterval(refresh,60000);
  document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAll(null);});
 })();
 document.addEventListener('click',e=>{document.querySelectorAll('details.dp-range[open]').forEach(d=>{if(!d.contains(e.target))d.removeAttribute('open');});});
+document.addEventListener('change',event=>{
+ const input=event.target.closest('[data-auto-submit]');
+ if(input&&input.files&&input.files.length&&input.form){input.form.requestSubmit?input.form.requestSubmit():input.form.submit();}
+});
+(function(){
+ const field=document.querySelector('[data-lead-phone]'),dialog=document.getElementById('lead-dup-dialog');
+ if(!field||!dialog)return;
+ let timer=0,last='',blocked=false;
+ const digits=v=>v.replace(/\D/g,'');
+ async function check(){
+  const raw=field.value.trim(),d=digits(raw);
+  if(d.length<10){blocked=false;return;}
+  if(raw===last&&!blocked)return;
+  last=raw;
+  try{
+   const r=await fetch('/lead-phone-check?phone='+encodeURIComponent(raw)+'&exclude='+encodeURIComponent(field.dataset.exclude||''),{headers:{Accept:'application/json'}});
+   if(!r.ok)return;
+   const data=await r.json();
+   blocked=!!data.exists;
+   if(data.exists&&!dialog.open){dialog.querySelector('[data-lead-dup-name]').textContent=data.name;dialog.showModal();}
+  }catch(error){}
+ }
+ field.addEventListener('input',()=>{clearTimeout(timer);blocked=false;timer=setTimeout(check,350);});
+ field.addEventListener('blur',check);
+ dialog.querySelector('[data-lead-dup-close]').addEventListener('click',()=>{dialog.close();field.value='';last='';blocked=false;field.focus();});
+ dialog.addEventListener('cancel',()=>{field.value='';last='';blocked=false;});
+ field.form.addEventListener('submit',event=>{if(blocked){event.preventDefault();dialog.showModal();}});
+})();
+(function(){
+ const menus=document.querySelectorAll('[data-fu-menu]');
+ const closeAll=except=>menus.forEach(m=>{if(m===except)return;m.querySelector('[data-fu-pop]').hidden=true;m.querySelector('[data-fu-btn]').setAttribute('aria-expanded','false');});
+ menus.forEach(m=>{
+  const pop=m.querySelector('[data-fu-pop]'),btn=m.querySelector('[data-fu-btn]');
+  btn.addEventListener('click',e=>{e.stopPropagation();closeAll(m);pop.hidden=!pop.hidden;btn.setAttribute('aria-expanded',String(!pop.hidden));});
+ });
+ document.addEventListener('click',e=>{if(!e.target.closest('[data-fu-menu]'))closeAll(null);});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll(null);});
+ document.querySelectorAll('.fu-dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close();}));
+ document.querySelectorAll('[data-fu-open]').forEach(b=>b.addEventListener('click',()=>{const d=document.getElementById(b.dataset.fuOpen);if(d&&d.showModal)d.showModal();}));
+ const add=document.getElementById('fu-add-dialog');
+ if(add&&add.showModal&&location.hash==='#new')add.showModal();
+ const rs=document.getElementById('fu-resched-dialog');
+ document.querySelectorAll('[data-fu-resched]').forEach(b=>b.addEventListener('click',()=>{
+  if(!rs)return;closeAll(null);
+  rs.querySelector('[data-fu-resched-id]').value=b.dataset.fuResched;
+  rs.querySelector('[data-fu-resched-name]').textContent=b.dataset.fuTitle;
+  rs.querySelector('[data-fu-resched-due]').value=b.dataset.fuDue;
+  rs.showModal();
+ }));
+ const filter=document.querySelector('[data-fu-filter]');
+ if(filter)filter.addEventListener('change',()=>{
+  document.querySelectorAll('[data-fu-status]').forEach(r=>{r.hidden=!!filter.value&&r.dataset.fuStatus!==filter.value;});
+ });
+})();
+(function(){
+ document.querySelectorAll('[data-ld-open]').forEach(b=>b.addEventListener('click',()=>{
+  const d=document.getElementById(b.dataset.ldOpen);
+  if(!d||!d.showModal)return;
+  d.showModal();
+  const f=d.querySelector('[data-ld-focus]');if(f){f.focus();f.select();}
+ }));
+ document.querySelectorAll('.ld-dialog').forEach(d=>{
+  d.addEventListener('click',e=>{if(e.target===d)d.close();});
+  d.querySelectorAll('[data-ld-close]').forEach(x=>x.addEventListener('click',()=>d.close()));
+ });
+})();

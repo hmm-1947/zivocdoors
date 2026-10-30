@@ -1,4 +1,4 @@
-<div class="page-heading"><div><span class="eyebrow">QUOTATIONS</span><h1>Quotation Details</h1><p class="muted">Filter, preview, edit and export customer quotations.</p></div>{% if wf_can_edit(u) %}<a class="button" href="?page=quotation_create">+ Create Quotation</a>{% endif %}</div>
+<div class="page-heading"><div><h1>Quotation Details</h1></div>{% if wf_can_edit(u) %}<a class="button" href="?page=quotation_create">+ Create Quotation</a>{% endif %}</div>
 {% set f = request.args %}
 {{ date_pills('quotations', q_keep, f.get('from', ''), f.get('to', '')) }}
 {% if listing_error %}<p class="notice error">{{ listing_error }}</p>{% endif %}

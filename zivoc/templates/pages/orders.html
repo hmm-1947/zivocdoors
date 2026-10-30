@@ -1,4 +1,4 @@
-<div class="page-heading"><div><span class="eyebrow">FROM ENQUIRY TO PRODUCTION</span><h1>My Orders</h1><p class="muted">Keep every door moving in the right direction.</p></div><a class="button" href="?page=products{{ '&lead_id=' ~ request_lead if request_lead else '' }}">+ Create order</a></div>
+<div class="page-heading"><div><h1>My Orders</h1></div><a class="button" href="?page=products{{ '&lead_id=' ~ request_lead if request_lead else '' }}">+ Create order</a></div>
 <a class="button ol-orderform-btn" href="?page=order_forms">{{ icon('orders') }}<span>Order Form</span></a>
 {{ date_pills('orders', {'stage': f_stage, 'search': f_search}, f_from, f_to) }}
 <section class="card ol-card">

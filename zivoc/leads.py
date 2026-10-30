@@ -25,6 +25,27 @@ def lead_number(row):
     return '%s-LEAD-%04d' % (financial_year(day), int(row['id']))
 
 
+_PHONE_SQL = "RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone,' ',''),'-',''),'+',''),'(',''),')',''),10)"
+
+
+def phone_owner(phone, exclude=None):
+    digits = ''.join(ch for ch in str(phone) if ch.isdigit())[-10:]
+    if len(digits) < 6:
+        return None
+    sql = 'SELECT id,name FROM leads WHERE ' + _PHONE_SQL + '=%s'
+    args = [digits]
+    if exclude:
+        sql += ' AND id<>%s'
+        args.append(int(exclude))
+    return db.one(sql + ' LIMIT 1', args)
+
+
+def check_phone(phone, exclude=None):
+    found = phone_owner(phone, exclude)
+    if found:
+        raise AppError('Please use a different mobile number. This mobile number is already registered with another lead (%s).' % found['name'])
+
+
 def insert_lead(sid, data):
     day = data.get('lead_date') or str(db.one('SELECT CURRENT_DATE d')['d'])
     db.q('INSERT INTO leads(salesman_id,name,phone,address,address2,postal_code,post_office,state,district,notes,lead_date,customer_type,contact_date,stage,gst_number) '
@@ -41,7 +62,7 @@ def _form():
     kind = val('customer_type', 15) or 'new'
     if kind not in LEAD_TYPES:
         raise AppError('Choose a customer type.')
-    contact = wf_date(required('contact_date', 10))
+    contact = wf_date(val('contact_date', 10) or str(db.one('SELECT CURRENT_DATE d')['d']))
     return {
         'customer_type': kind,
         'lead_date': wf_date(required('lead_date', 10)),
@@ -62,6 +83,7 @@ def _form():
 def lead_create(u):
     sid = salesman(u)
     data = _form()
+    check_phone(data['phone'])
     db.begin()
     lead_id = insert_lead(sid, data)
     db.q('INSERT INTO reminders(salesman_id,lead_id,title,due_at) VALUES (%s,%s,%s,%s)',
@@ -73,6 +95,7 @@ def lead_create(u):
 def lead_update(u):
     record = owner('leads', to_int(val('id')), u)
     data = _form()
+    check_phone(data['phone'], record['id'])
     stage = val('stage', 30) or record['stage']
     if stage not in LEAD_STAGES:
         raise AppError('Invalid lead status.')
@@ -125,12 +148,11 @@ def lead_listing(args, u):
         where.append("l.customer_type='franchise'")
     else:
         customer = ''
-    stage = args.get('status', '')
-    if stage in LEAD_STAGES:
-        where.append('l.stage=%s')
-        params.append(stage)
-    else:
-        stage = ''
+    raw = args.getlist('status') if hasattr(args, 'getlist') else [args.get('status', '')]
+    stage = [item for item in LEAD_STAGES if item in raw]
+    if stage:
+        where.append('l.stage IN (%s)' % ','.join(['%s'] * len(stage)))
+        params.extend(stage)
     search = args.get('search', '').strip()[:100]
     if search:
         where.append('(l.name LIKE %s OR l.phone LIKE %s OR l.lead_no LIKE %s OR l.status_remark LIKE %s OR l.notes LIKE %s)')
@@ -151,6 +173,6 @@ def lead_listing(args, u):
     keep = {key: value for key, value in (('from', date_from), ('to', date_to), ('customer', customer), ('status', stage), ('search', search)) if value}
     return {
         'leads': rows, 'f_from': date_from, 'f_to': date_to, 'f_customer': customer, 'f_status': stage, 'f_search': search, 'f_limit': limit,
-        'l_count': count, 'l_page': page_no, 'l_pages': pages, 'l_offset': offset, 'l_keep': keep, 'l_query': urlencode(dict(keep, limit=limit)),
+        'l_count': count, 'l_page': page_no, 'l_pages': pages, 'l_offset': offset, 'l_keep': keep, 'l_query': urlencode(dict(keep, limit=limit), doseq=True),
         'l_range': bool(date_from or date_to), 'LEAD_STAGES': LEAD_STAGES, 'LEAD_LIMITS': LEAD_LIMITS,
     }

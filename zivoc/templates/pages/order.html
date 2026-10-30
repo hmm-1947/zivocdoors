@@ -1,5 +1,5 @@
 {% if o is none %}<p class="notice error">Order unavailable.</p>{% else %}
-<a class="back" href="?page=orders">← All orders</a><div class="page-heading"><div><span class="eyebrow">ORDER #{{ '%04d' % o['id'] }}</span><h1>{{ o['customer'] }}</h1><p class="muted">{{ o['phone'] }} · {{ o['address'] }}</p></div><span class="badge">{{ o['source'] }}</span></div>
+<a class="back" href="?page=orders">← All orders</a><div class="page-heading"><div><h1>{{ o['customer'] }}</h1></div><span class="badge">{{ o['source'] }}</span></div>
 <section class="card"><h2>Order details</h2>
 <div class="metric"><span>Party</span><strong>{{ o['customer'] }}</strong></div>
 <div class="metric"><span>Order No</span><strong>#{{ '%04d' % o['id'] }}</strong></div>

@@ -300,10 +300,28 @@ SIMPLE_ACTIONS = {
 
 def _mark_done(u):
     record = owner('reminders', to_int(val('id')), u)
+    if int(record['done'] or 0):
+        return
     db.q('UPDATE reminders SET done=1 WHERE id=%s', [record['id']])
+    db.q("INSERT INTO reminder_events(reminder_id,actor_id,kind,from_due,to_due) VALUES (%s,%s,'done',%s,%s)", [record['id'], u['id'], record['due_at'], record['due_at']])
+
+
+def _reminder_reschedule(u):
+    record = owner('reminders', to_int(val('id')), u)
+    text = val('due_at')
+    try:
+        date = datetime.strptime(text, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        date = None
+    if date is None or date.strftime('%Y-%m-%dT%H:%M') != text:
+        raise AppError('Enter a valid reminder date and time.')
+    db.q('UPDATE reminders SET due_at=%s,done=0 WHERE id=%s', [date.strftime('%Y-%m-%d %H:%M:%S'), record['id']])
+    db.q("INSERT INTO reminder_events(reminder_id,actor_id,kind,from_due,to_due) VALUES (%s,%s,'rescheduled',%s,%s)",
+         [record['id'], u['id'], record['due_at'], date.strftime('%Y-%m-%d %H:%M:%S')])
 
 
 SIMPLE_ACTIONS['done'] = _mark_done
+SIMPLE_ACTIONS['reminder_reschedule'] = _reminder_reschedule
 
 
 def _dispatch(action, u):

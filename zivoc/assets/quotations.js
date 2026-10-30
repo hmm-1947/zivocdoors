@@ -35,7 +35,7 @@ if(qtForm&&!qtForm.hasAttribute('data-order')){
   const key=String(serial++),tr=document.createElement('tr');
   tr.insertCell().dataset.qtSl='';
    const actions=tr.insertCell();actions.className='zf-row-actions';
-   for(const [cls,attr,text,title,hidden]of[['zf-icon-btn zf-edit','qtEdit','Edit','Edit',false],['zf-icon-btn zf-save','qtSave','Save','Save',true],['zf-icon-btn zf-del','qtRemove','Delete','Delete',false]]){
+    for(const [cls,attr,text,title,hidden]of[['zf-icon-btn zf-del','qtRemove','Delete','Delete',false]]){
     const button=document.createElement('button');button.type='button';button.className=cls;button.dataset[attr]='';button.textContent=text;button.title=title;button.hidden=hidden;actions.append(button);
    }
    const codeCell=tr.insertCell(),codeText=document.createElement('span');codeText.dataset.qtCodeText='';codeText.textContent=codeValue;codeCell.append(codeText);
@@ -63,7 +63,16 @@ if(qtForm&&!qtForm.hasAttribute('data-order')){
 
  qtForm.addEventListener('click',event=>{
   const remove=event.target.closest('[data-qt-remove]'),edit=event.target.closest('[data-qt-edit]'),save=event.target.closest('[data-qt-save]');
-  if(remove){remove.closest('tr').remove();refresh();}
+  if(remove){
+    const row=remove.closest('tr'),dialog=document.getElementById('qt-delete-dialog');
+    if(!dialog||!dialog.showModal){row.remove();refresh();return;}
+    const label=row.querySelector('[data-qt-code-text]'),nameCell=row.querySelector('[data-qt-name-text]');
+    dialog.querySelector('[data-qt-delete-item]').textContent=[label&&label.textContent,nameCell&&nameCell.textContent].filter(Boolean).join(' · ');
+    const confirmBtn=dialog.querySelector('[data-qt-delete-confirm]');
+    confirmBtn.onclick=()=>{row.remove();refresh();dialog.close();};
+    dialog.showModal();
+   }
+
   if(edit){
    const row=edit.closest('tr');
    row.querySelectorAll('input[type="number"]').forEach(input=>{input.readOnly=false;});
@@ -171,3 +180,10 @@ if(qtForm&&(qtForm.hasAttribute('data-edit')||qtForm.hasAttribute('data-prefill'
   });
  }
 })();
+document.addEventListener('click',event=>{
+ const toggle=event.target.closest('[data-ov-toggle]');
+ if(!toggle)return;
+ const row=toggle.closest('tr'),open=!row.classList.contains('ov-open');
+ row.classList.toggle('ov-open',open);
+ toggle.setAttribute('aria-expanded',String(open));
+});

@@ -16,7 +16,7 @@ from .doorhandles import dh_brands
 from .drawing import wf_drawing_svg
 from .helpers import STAGES, cm_text, cm_unit, dim_unit, csrf_token, next_stage, owner, privileged, redirect, reset_user_cache, to_int, user
 from .hr import hr_advance_total, hr_attendance, hr_employee, hr_month, hr_workdays
-from .leads import lead_form_values, lead_listing, party_people
+from .leads import lead_form_values, lead_listing, party_people, phone_owner
 from .avatars import refresh as avatar_refresh
 from .team import sync_team
 
@@ -369,6 +369,17 @@ def ctx_checkout(u, all_access):
     return out
 
 
+def _fu_icon(title):
+    text = str(title or '').lower()
+    if text.startswith('door survey'):
+        return 'survey'
+    if text.startswith('call'):
+        return 'leads'
+    if 'quotation' in text:
+        return 'quote'
+    return 'phone'
+
+
 def ctx_reminders(u):
     lead = None
     if request.args.get('lead_id'):
@@ -376,7 +387,35 @@ def ctx_reminders(u):
             lead = owner('leads', to_int(request.args.get('lead_id')), u)
         except AppError:
             lead = None
-    return {'lead': lead}
+    scope = '1=1' if privileged(u) else 'r.salesman_id=%d' % int(u['id'])
+    base = 'SELECT r.*,u.name FROM reminders r JOIN users u ON u.id=r.salesman_id WHERE '
+    open_rows = db.rows(base + 'r.done=0 AND ' + scope + ' ORDER BY r.due_at LIMIT 100')
+    hist_rows = db.rows(base + scope + ' ORDER BY r.due_at DESC LIMIT 200')
+    ids = sorted({int(r['id']) for r in list(open_rows) + list(hist_rows)})
+    events = {}
+    if ids:
+        for event in db.rows('SELECT * FROM reminder_events WHERE reminder_id IN (%s) ORDER BY created_at,id' % ','.join(str(i) for i in ids)):
+            events.setdefault(int(event['reminder_id']), []).append(event)
+    stamp = now().strftime('%Y-%m-%d %H:%M:%S')
+
+    def status(row):
+        if int(row['done'] or 0):
+            return 'done'
+        if str(row['due_at']) <= stamp:
+            return 'overdue'
+        if any(e['kind'] == 'rescheduled' for e in events.get(int(row['id']), [])):
+            return 'rescheduled'
+        return 'pending'
+
+    def decorate(rows):
+        out = []
+        for row in rows:
+            item = dict(row)
+            item['status'] = status(row)
+            item['icon'] = _fu_icon(row['title'])
+            out.append(item)
+        return out
+    return {'lead': lead, 'fu_open': decorate(open_rows), 'fu_hist': decorate(hist_rows), 'fu_events': events}
 
 
 def ctx_commissions(u, all_access):
@@ -531,9 +570,8 @@ def reminders_unread(u):
     rows = db.rows('SELECT created_at,due_at FROM reminders WHERE done=0 AND ' + ('1=1' if privileged(u) else 'salesman_id=%d' % int(u['id'])))
     count = 0
     for row in rows:
-        created = str(row['created_at'])
         due = str(row['due_at'])
-        if created > seen or (due <= stamp and due > seen):
+        if due <= stamp and due > seen:
             count += 1
     return count
 
@@ -636,6 +674,15 @@ def reminders_json():
     rows = db.rows('SELECT id,title,due_at FROM reminders WHERE done=0 AND due_at<=%s AND ' + ('1=1' if privileged(u) else 'salesman_id=%d' % int(u['id'])) +
                    ' ORDER BY due_at LIMIT 100', [now().strftime('%Y-%m-%d %H:%M:%S')])
     return Response(json.dumps(rows, default=str), mimetype='application/json')
+
+
+def lead_phone_check():
+    u = user()
+    if not u:
+        return Response('{}', 401, mimetype='application/json')
+    found = phone_owner(request.args.get('phone', ''), to_int(request.args.get('exclude', 0)) or None)
+    body = {'exists': bool(found), 'name': found['name'] if found else ''}
+    return Response(json.dumps(body), mimetype='application/json')
 
 
 def selfie():
@@ -966,6 +1013,7 @@ def register(app):
     app.add_url_rule('/api.php', 'api_import_php', api_import, methods=['GET', 'POST'])
     app.add_url_rule('/reminders', 'reminders_json', reminders_json)
     app.add_url_rule('/reminders-unread', 'reminders_unread_json', reminders_unread_json)
+    app.add_url_rule('/lead-phone-check', 'lead_phone_check', lead_phone_check)
     app.add_url_rule('/selfie', 'selfie', selfie)
     app.add_url_rule('/brand-image', 'brand_image', brand_image)
     app.add_url_rule('/avatar', 'avatar', avatar)

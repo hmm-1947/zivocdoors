@@ -1,22 +1,22 @@
 {% set editing = lead is not none %}
-<div class="page-heading"><div><span class="eyebrow">BUILD YOUR PIPELINE</span><h1>{{ 'Edit Lead' if editing else 'Create Lead' }}</h1><p class="muted">{{ lead['lead_no'] if editing and lead['lead_no'] else 'Every new connection is an opportunity.' }}</p></div><div class="row-actions">{% if editing %}<a href="?page=orders&lead_id={{ lead['id'] }}">Create order →</a><a href="?page=reminders&lead_id={{ lead['id'] }}#new">Follow up</a>{% endif %}<a href="?page=leads">Lead Listing →</a></div></div>
+<div class="page-heading"><div><h1>{{ 'Edit Lead' if editing else 'Create Lead' }}</h1></div><div class="row-actions">{% if editing %}<a href="?page=orders&lead_id={{ lead['id'] }}">Create order →</a><a href="?page=reminders&lead_id={{ lead['id'] }}#new">Follow up</a>{% endif %}<a href="?page=leads">Lead Listing →</a></div></div>
 <form method="post" class="zf-form"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'lead_update' if editing else 'lead' }}"><input type="hidden" name="customer_type" value="{{ old.get('customer_type', 'new') }}"><input type="hidden" name="lead_date" value="{{ old.get('lead_date', today) }}"><input type="hidden" name="post_office" value="{{ old.get('post_office', '') }}">
 {% if editing %}<input type="hidden" name="id" value="{{ lead['id'] }}">{% endif %}
-<section class="card zf-card"><p class="zf-title"><span>Lead</span> Details :</p><div class="zf-grid">
-<label class="zf-c6"><span>Customer Name * :</span><input type="text" name="name" placeholder="Enter Customer Name" value="{{ old.get('name', '') }}" required maxlength="150"></label>
-<label class="zf-c6"><span>Phone Number * :</span><input type="tel" name="phone" placeholder="Enter Phone Number" value="{{ old.get('phone', '') }}" required maxlength="30"></label>
-<details class="zf-c12 zf-more"><summary>Additional Details</summary><div class="zf-grid">
+<section class="card zf-card"><p class="zf-title"><span>Lead</span> Details</p><div class="zf-grid">
+<label class="zf-c6"><span>Customer Name *</span><input type="text" name="name" placeholder="Enter Customer Name" value="{{ old.get('name', '') }}" required maxlength="150"></label>
+<label class="zf-c6"><span>Phone Number *</span><input type="tel" name="phone" placeholder="Enter Customer Phone Number" data-lead-phone data-exclude="{{ lead['id'] if editing else '' }}" value="{{ old.get('phone', '') }}" required maxlength="30"></label>
+<details class="zf-c12 zf-more lead-more" {{ 'open' if editing else '' }}><summary>Additional Details</summary><div class="zf-grid">
 <label class="zf-c12">GST Number (Optional) :<input type="text" name="gst_number" placeholder="Enter GST Number" value="{{ old.get('gst_number', '') }}" maxlength="20"></label>
 <label class="zf-c6">Address 1 :<input type="text" name="address1" placeholder="Enter Address 1" value="{{ old.get('address1', '') }}"></label>
 <label class="zf-c6">Address 2 :<input type="text" name="address2" placeholder="Enter Address 2" value="{{ old.get('address2', '') }}"></label>
 <label class="zf-c4">PIN Code :<input type="text" inputmode="numeric" maxlength="10" name="postal_code" placeholder="Enter PIN Code" value="{{ old.get('postal_code', '') }}"></label>
 <label class="zf-c4">State :<select name="state"><option value="">Select State</option>{% for s in ['Kerala', 'Tamil Nadu', 'Karnataka'] %}<option {{ 'selected' if old.get('state', '') == s else '' }}>{{ s }}</option>{% endfor %}{% if old.get('state') and old.get('state') not in ['Kerala', 'Tamil Nadu', 'Karnataka'] %}<option selected>{{ old.get('state') }}</option>{% endif %}</select></label>
 <label class="zf-c4">District :<input type="text" name="district" placeholder="Enter District" value="{{ old.get('district', '') }}"></label>
-</div></details>
 {% if all_access and not editing %}<div class="zf-c12">{{ assignment(u) }}</div>{% endif %}
 <label class="zf-c12">Lead Remark :<textarea name="remark" placeholder="Enter Lead Remark">{{ old.get('remark', '') }}</textarea></label>
-<label class="zf-c12">Next Contact Date :<input type="date" name="contact_date" value="{{ old.get('contact_date', '') }}" required></label>
+<label class="zf-c12">Next Contact Date :<input type="date" name="contact_date" value="{{ old.get('contact_date', '') }}"></label>
 {% if editing %}<label class="zf-c4">Status :<select name="stage">{% for s in ['Lead', 'Oppurtunity', 'Oppurtunity 50%', 'Oppurtunity 75%', 'Oppurtunity 90%', 'Quotation', 'Do not Contact', 'Lost Quotation'] %}<option {{ 'selected' if old.get('stage', 'Lead') == s else '' }}>{{ s }}</option>{% endfor %}</select></label><label class="zf-c8">Status Remark :<textarea name="status_remark">{{ old.get('status_remark', '') }}</textarea></label>{% endif %}
+</div></details>
 </div><button type="submit" class="zf-submit">{{ 'Update Lead' if editing else 'Create Lead' }}</button></section>
 </form>
-
+<dialog class="qt-dialog lead-dup-dialog" id="lead-dup-dialog" aria-labelledby="lead-dup-title"><div class="qt-dialog-form lead-dup-body"><span class="lead-dup-icon" aria-hidden="true">!</span><h3 id="lead-dup-title">Error!</h3><p class="lead-dup-msg">Please use a different mobile number. This mobile number is already registered with another lead.</p><p class="lead-dup-owner">This number is <strong data-lead-dup-name></strong>&rsquo;s lead.</p><button type="button" class="lead-dup-btn" data-lead-dup-close>Use different number</button></div></dialog>

@@ -1,4 +1,4 @@
-<div class="page-heading"><div><span class="eyebrow">ORDER FORMS</span><h1>Order Form</h1><p class="muted">Filter quotations and open the quotation PDF or the Order Form PDF with door diagrams.</p></div></div>
+<div class="page-heading"><div><h1>Order Form</h1></div></div>
 {% set f = request.args %}
 <form method="get" class="card ol-filters"><input type="hidden" name="page" value="order_forms">{% for k in ['customer', 'stage', 'status', 'search'] %}{% if q_keep.get(k) %}<input type="hidden" name="{{ k }}" value="{{ q_keep[k] }}">{% endif %}{% endfor %}<div class="ol-row"><strong class="ol-label">Filter by Date :</strong><label>from :<input type="date" name="from" value="{{ f.get('from', '') }}"></label><label>to :<input type="date" name="to" value="{{ f.get('to', '') }}"></label><button>Filter</button><a class="ol-btn ol-warn" href="?page=order_forms">Refresh</a><a class="ol-btn ol-info" href="?page=order_forms&from={{ php_date('Y-m-d') }}&to={{ php_date('Y-m-d') }}">Today</a></div></form>
 {% if listing_error %}<p class="notice error">{{ listing_error }}</p>{% endif %}

@@ -188,6 +188,7 @@ def lead_gst_ensure():
 
 
 def notify_ensure():
+    db.q("CREATE TABLE IF NOT EXISTS reminder_events (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, reminder_id INT NOT NULL, actor_id INT NULL, kind VARCHAR(20) NOT NULL, from_due DATETIME NULL, to_due DATETIME NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY reminder_id (reminder_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
     if not db.one("SHOW COLUMNS FROM reminders LIKE 'created_at'"):
         db.q('ALTER TABLE reminders ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP')
     if not db.one("SHOW COLUMNS FROM users LIKE 'reminders_seen_at'"):
