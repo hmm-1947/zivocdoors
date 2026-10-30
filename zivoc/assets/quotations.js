@@ -181,9 +181,10 @@ if(qtForm&&(qtForm.hasAttribute('data-edit')||qtForm.hasAttribute('data-prefill'
  }
 })();
 document.addEventListener('click',event=>{
- const toggle=event.target.closest('[data-ov-toggle]');
- if(!toggle)return;
- const row=toggle.closest('tr'),open=!row.classList.contains('ov-open');
- row.classList.toggle('ov-open',open);
- toggle.setAttribute('aria-expanded',String(open));
+ const hit=event.target.closest('[data-qd-toggle],.qd-card .zf-title');
+ if(!hit)return;
+ const card=hit.closest('.qd-card'),open=!card.classList.contains('qd-open');
+ card.classList.toggle('qd-open',open);
+ const toggle=card.querySelector('[data-qd-toggle]');
+ if(toggle)toggle.setAttribute('aria-expanded',String(open));
 });

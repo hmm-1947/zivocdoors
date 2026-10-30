@@ -123,7 +123,7 @@ button,.button,.sidebar nav a{min-height:44px}
 .install-btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:0;background:#4f1fe0;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .install-btn[hidden]{display:none}
 .login-install{position:fixed;top:12px;right:12px;z-index:20}
-.ov-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;position:relative}
+.ov-head{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin:0 0 14px;position:relative}
 .ov-range{margin:0;font-size:13px;font-weight:600;color:var(--muted)}
 .ov-cal{position:relative;margin-left:auto}
 .ov-cal summary{list-style:none;cursor:pointer;border:1px solid #dedce7;box-shadow:0 4px 12px #4f1fe014}
@@ -202,7 +202,7 @@ button,.button,.sidebar nav a{min-height:44px}
 .lead-more>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg);margin-top:-4px;transition:transform .2s}
 .lead-more[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
 .lead-more>.zf-grid{padding:0 18px 18px}
-.ov-toggle{display:none}
+.qd-toggle{display:none}
 .zf-order-id{display:none}
 .ov-hide-terms{display:none}
 .zf-foot .ov-hide-terms~.zf-sum{grid-column:1/-1}
@@ -242,7 +242,7 @@ button,.button,.sidebar nav a{min-height:44px}
  header{position:fixed;top:10px;left:10px;right:10px;height:auto;padding:8px 10px;border-radius:26px;background:rgba(243,240,254,.6);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);box-shadow:0 4px 20px rgba(92,59,217,.12);z-index:60;gap:8px}
  .shell{padding-top:84px}
  .head-left{display:flex;align-items:center;gap:12px;min-width:0}
- .menu-btn{width:46px;height:46px;padding:0;border-radius:50%;background:#fff;border:1px solid #dedce7;display:flex;align-items:center;justify-content:center;color:var(--ink);flex:none}
+ .menu-btn{width:46px;height:46px;padding:0;border-radius:0;background:transparent;border:0;box-shadow:none;display:flex;align-items:center;justify-content:center;color:var(--ink);flex:none}
  .menu-btn svg{width:22px;height:22px}
  .install-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 18px;border-radius:26px;background:#3a14d6;color:#fff;font-weight:700;font-size:14px;border:0;white-space:nowrap;box-shadow:none}
  .install-btn[hidden]{display:none}
@@ -251,7 +251,7 @@ button,.button,.sidebar nav a{min-height:44px}
  .page-heading>div:first-child{flex:1;min-width:0}
  .page-heading>.button,.page-heading>a.button,.page-heading>.row-actions{margin-left:auto;flex:none}
  .ph-order h1{display:none}
- .zf-order-id{display:block;margin:0 0 14px;font-size:15px;color:var(--muted)}
+ .zf-order-id{display:block;margin:0;text-align:left;font-size:15px;color:var(--muted)}
  .zf-order-id strong{color:var(--ink);font-size:20px}
  .ov-items{display:block}
  .ov-items thead{display:none}
@@ -261,14 +261,18 @@ button,.button,.sidebar nav a{min-height:44px}
  .ov-items td:nth-child(3){display:block;grid-column:1;font-weight:700}
  .ov-items td:nth-child(4){display:block;grid-column:1;color:var(--muted)}
  .ov-items td:nth-child(2){display:flex;align-items:center;gap:8px;grid-column:2;grid-row:1/span 2}
- .ov-items tr.ov-open td:nth-child(1),.ov-items tr.ov-open td:nth-child(5),.ov-items tr.ov-open td:nth-child(6),.ov-items tr.ov-open td:nth-child(7){display:flex;justify-content:space-between;align-items:center;grid-column:1/-1;border-top:1px dashed var(--line)}
- .ov-items tr.ov-open td:nth-child(1)::before{content:"SL No";color:var(--muted)}
- .ov-items tr.ov-open td:nth-child(5)::before{content:"Qty";color:var(--muted)}
- .ov-items tr.ov-open td:nth-child(6)::before{content:"Price";color:var(--muted)}
- .ov-items tr.ov-open td:nth-child(7)::before{content:"Total";color:var(--muted)}
- .ov-toggle{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:50%;background:var(--bg);border:0;color:var(--ink)}
- .ov-toggle svg{width:18px;height:18px;transition:transform .2s}
- .ov-open .ov-toggle svg{transform:rotate(180deg)}
+ .ov-items td:nth-child(1),.ov-items td:nth-child(5),.ov-items td:nth-child(6),.ov-items td:nth-child(7){display:flex;justify-content:space-between;align-items:center;grid-column:1/-1;border-top:1px dashed var(--line)}
+ .ov-items td:nth-child(1)::before{content:"SL No";color:var(--muted)}
+ .ov-items td:nth-child(5)::before{content:"Qty";color:var(--muted)}
+ .ov-items td:nth-child(6)::before{content:"Price";color:var(--muted)}
+ .ov-items td:nth-child(7)::before{content:"Total";color:var(--muted)}
+ .qd-toggle{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;margin-left:auto;border-radius:50%;background:var(--bg);border:0;color:var(--ink);flex:none}
+  .qd-toggle svg{width:18px;height:18px;transition:transform .2s}
+  .qd-open .qd-toggle svg{transform:rotate(180deg)}
+  .qd-card .zf-title-row{align-items:center}
+  .qd-card .zf-title{margin-bottom:0;cursor:pointer}
+  .qd-card.qd-open .zf-title-row{margin-bottom:20px}
+  .qd-card:not(.qd-open) .zf-grid{display:none}
  .pf-top{gap:16px}
  .pf-avatar-wrap .avatar.large{width:96px;height:96px;font-size:38px}
 }
