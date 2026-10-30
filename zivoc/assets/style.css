@@ -389,3 +389,11 @@ button,.button,.sidebar nav a{min-height:44px}
  .ld-ibtn{width:42px;height:42px}
  .ld-dialog-form{padding:18px}
 }
+
+.qd-date{display:block;position:relative}.qd-date input{width:100%}.qd-date-text{display:none}
+@media(max-width:700px){
+  .qd-fmt input{text-align:center;-webkit-text-fill-color:transparent;color:transparent;position:relative}
+  .qd-fmt input::-webkit-datetime-edit{color:transparent}
+  .qd-fmt input::-webkit-calendar-picker-indicator{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer}
+  .qd-fmt .qd-date-text{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--ink);font:inherit}
+}

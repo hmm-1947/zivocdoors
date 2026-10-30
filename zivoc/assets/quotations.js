@@ -188,3 +188,5 @@ document.addEventListener('click',event=>{
  const toggle=card.querySelector('[data-qd-toggle]');
  if(toggle)toggle.setAttribute('aria-expanded',String(open));
 });
+
+(function(){const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const fmt=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');return m?(+m[3])+' '+mon[+m[2]-1]+' '+m[1]:'';};const init=()=>document.querySelectorAll('.qd-fmt').forEach(w=>{const i=w.querySelector('input'),t=w.querySelector('[data-qdate-text]');if(!i||!t)return;const s=()=>{t.textContent=fmt(i.value);};i.addEventListener('input',s);i.addEventListener('change',s);s();});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();})();
